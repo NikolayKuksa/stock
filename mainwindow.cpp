@@ -15,6 +15,8 @@ QString urltail(" &format=json &diagnostics=true &env=store://datatables.org/all
 QUrl url=QUrl(domain+query+urltail);
 
 reply=qnam.get(QNetworkRequest(url));
+   connect(reply, SIGNAL(finished()),
+        this, SLOT(httpFinished()));
    connect(reply, SIGNAL(readyRead()),
             this, SLOT(httpReadyRead()));
 
@@ -29,26 +31,63 @@ void MainWindow::httpReadyRead()
     // That way we use less RAM than when reading it at the finished()
     // signal of the QNetworkReply
 
-    QByteArray jsonData = reply->readAll();
-    QJsonParseError *err;
-    qDebug()<<"err: "<<err->errorString();
-        QJsonDocument document = QJsonDocument::fromJson(jsonData,err);
+    //jsonData.append(reply->readAll());
+
+}
+
+void MainWindow::httpFinished()
+{
+    jsonData=reply->readAll();
+    qDebug()<<jsonData.count();
+    //qDebug()<<jsonData;
+    QJsonParseError err;
+    QJsonDocument document = QJsonDocument::fromJson(jsonData,&err);
         if (!document.isObject()) {
             qDebug() << "Document is not an object";
-            //return 4;
+            qDebug()<<"err: "<<err.errorString();
+            return;
         }
         QJsonObject object = document.object();
-        QJsonValue jsonValue = object.value("query");
-        if (jsonValue.isUndefined()) {
+
+        QJsonValue query = object.value("query");
+        if (query.isUndefined()) {
             qDebug() << "Key id does not exist";
-            //return 5;
-        }
-        if (!jsonValue.isString()) {
-            qDebug() << "Value not string";
-           // return 6;
+            return;
         }
 
-        qDebug() << jsonValue.toString();
+        QJsonValue results=query.toObject().value("results");
+        if (results.isUndefined()) {
+            qDebug() << "Key id does not exist";
+            return;
+        }
+
+        QJsonValue quote=results.toObject().value("quote");
+        if (quote.isUndefined()) {
+            qDebug() << "Key id does not exist";
+            return;
+        }
+
+        QJsonArray quotes=quote.toArray();
+        QJsonObject row;
+        for(size_t i=0;i<quotes.size();i++)
+        {
+            row=quotes.at(i).toObject();
+            qDebug()<<"Symbol: "<<row.value("Symbol");
+            qDebug()<<"Date: "<<row.value("Date");
+            qDebug()<<"Open: "<<row.value("Open");
+            qDebug()<<"High: "<<row.value("High");
+            qDebug()<<"Low: "<<row.value("Low");
+            qDebug()<<"Close: "<<row.value("Close");
+            qDebug()<<"Volume: "<<row.value("Volume");
+            qDebug()<<"Adj_Close: "<<row.value("Adj_Close");
+            qDebug()<<"---------------------------------";
+        }
+       /* if (!qur.isString()) {
+            qDebug() << "Value not string";
+            //return;
+        }*/
+
+        //qDebug() << jsonValue.toString();
 
 }
 

@@ -12,6 +12,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QJsonArray>
 
 class MainWindow : public QMainWindow
 {
@@ -19,12 +20,13 @@ class MainWindow : public QMainWindow
 private slots:
     //void downloadFile();
     //void cancelDownload();
-    //void httpFinished();
+    void httpFinished();
     void httpReadyRead();
 
 private:
     QNetworkAccessManager qnam;
     QNetworkReply *reply;
+    QByteArray jsonData;
 
 public:
     MainWindow(QWidget *parent = 0);
