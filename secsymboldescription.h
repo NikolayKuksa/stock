@@ -2,8 +2,8 @@
 #define SECSYMBOLDESCRIPTION_H
 
 #include <QVector>
+#include "securitytype.h"
 
-enum SecurityType{security, index};
 
 class SecSymbolDescription
 {

@@ -19,4 +19,5 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     secsymboldescription.h \
-    findatacollector.h
+    findatacollector.h \
+    securitytype.h

@@ -25,26 +25,21 @@
 #include <QComboBox>
 
 #include "secsymboldescription.h"
-
-//enum SecurityType{security, index};
+#include "findatacollector.h"
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 private slots:
-    //void downloadFile();
-    //void cancelDownload();
-    void httpFinished();
-    void httpReadyRead();
-    void httpRequest();
     void shareClicked();
     void indexClicked();
-
+    void searchButtonClicked();
 
 private:
     QNetworkAccessManager qnam;
     QNetworkReply *reply;
     SecSymbolDescription *symbolDesc;
+    FinDataCollector *yahooCollector;
    //Gui
     QGroupBox *calcPane;
     QGroupBox *searchPane;
@@ -55,12 +50,15 @@ private:
     QDateEdit *toDateEdit;
     QComboBox *selectSecComboBox;
     SecurityType secType;
+    QPushButton *searchButton;
 
     void createRadioButton(QHBoxLayout *layout);
     void createDateEdit(QHBoxLayout *layout);
     void createSearchButton(QHBoxLayout *layout,QWidget *parent = 0);
     QComboBox* createSelectSecComboBox(QWidget *parent = 0);
 
+signals:
+    void needData(QString, QString, QString, QString);
 public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
