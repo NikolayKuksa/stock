@@ -13,6 +13,10 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    secsymboldescription.cpp \
+    findatacollector.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    secsymboldescription.h \
+    findatacollector.h

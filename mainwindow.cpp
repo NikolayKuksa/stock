@@ -7,6 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
     mainLayout=new QBoxLayout(QBoxLayout::LeftToRight);
     this->setWindowTitle("Stock. Developed by Mykola Kuksa");
 
+    symbolDesc = new SecSymbolDescription;
     //==================================================
     calcPane = new QGroupBox(tr("Calculation"));
     QHBoxLayout *controlLayout = new QHBoxLayout;
@@ -19,6 +20,10 @@ MainWindow::MainWindow(QWidget *parent)
     QGridLayout *searchLayout = new QGridLayout;
     QHBoxLayout *dateSecLayout = new QHBoxLayout;
     createDateEdit(dateSecLayout);
+
+    selectSecComboBox = createSelectSecComboBox(searchPane);
+    searchLayout->addWidget(selectSecComboBox,1,0);
+
     createRadioButton(dateSecLayout);
     createSearchButton(dateSecLayout,searchPane);
 
@@ -27,6 +32,9 @@ MainWindow::MainWindow(QWidget *parent)
     historicalDataPane = new QGroupBox(tr("Historical data"));
     QVBoxLayout *historicalDataLayout = new QVBoxLayout;
     historicalDataLayout->addWidget(searchPane);
+
+
+
     table=new QTableWidget();
     historicalDataLayout->addWidget(table);
     historicalDataPane->setLayout(historicalDataLayout);
@@ -103,10 +111,24 @@ void MainWindow::httpFinished()
             qDebug()<<"---------------------------------";
         }*/
 
-       table->setColumnCount(8);
        QStringList headers;
-       headers<<"Symbol"<<"Date"<<"Open"<<"High"<<"Low"<<"Close"<<"Volume"<<"Adj_Close";
+       //quotes.at(0).toArray().
+       headers<<"Date"<<"Open"<<"High"<<"Low"<<"Close"<<"Volume"<<"Adj_Close";
+       table->setColumnCount(headers.length());
        table->setHorizontalHeaderLabels(headers);
+       int width=90;
+       table->setColumnWidth(0,width);
+       table->setColumnWidth(1,width);
+       table->setColumnWidth(2,width);
+       table->setColumnWidth(3,width);
+       table->setColumnWidth(4,width);
+       table->setColumnWidth(5,width);
+       table->setColumnWidth(6,width);
+
+       table->clearContents();
+       int rc=table->rowCount()-1;
+       while (rc>=0){table->removeRow(rc--);}
+
        for(int i=0;i<quotes.size();i++){
             table->insertRow(i);
             QTableWidgetItem* celli0=new QTableWidgetItem();
@@ -116,17 +138,15 @@ void MainWindow::httpFinished()
             QTableWidgetItem* celli4=new QTableWidgetItem();
             QTableWidgetItem* celli5=new QTableWidgetItem();
             QTableWidgetItem* celli6=new QTableWidgetItem();
-            QTableWidgetItem* celli7=new QTableWidgetItem();
 
             row=quotes.at(i).toObject();
-            celli0->setText(row.value("Symbol").toString());
-            celli1->setText(row.value("Date").toString());
-            celli2->setText(row.value("Open").toString());
-            celli3->setText(row.value("High").toString());
-            celli4->setText(row.value("Low").toString());
-            celli5->setText(row.value("Close").toString());
-            celli6->setText(row.value("Volume").toString());
-            celli7->setText(row.value("Adj_Close").toString());
+            celli0->setText(row.value("Date").toString());
+            celli1->setText(row.value("Open").toString());
+            celli2->setText(row.value("High").toString());
+            celli3->setText(row.value("Low").toString());
+            celli4->setText(row.value("Close").toString());
+            celli5->setText(row.value("Volume").toString());
+            celli6->setText(row.value("Adj_Close").toString());
 
             table->setItem(i,0,celli0);
             table->setItem(i,1,celli1);
@@ -135,7 +155,6 @@ void MainWindow::httpFinished()
             table->setItem(i,4,celli4);
             table->setItem(i,5,celli5);
             table->setItem(i,6,celli6);
-            table->setItem(i,7,celli7);
         }
 
 }
@@ -150,7 +169,7 @@ void MainWindow::createDateEdit(QHBoxLayout *layout)
 
     QFormLayout *fromLayout=new QFormLayout;
     QLabel *fromLabel =new QLabel("From",fromToDatePane);
-    fromDateEdit = new QDateEdit(QDate::currentDate(),fromToDatePane);
+    fromDateEdit = new QDateEdit(QDate::currentDate().addDays(-14),fromToDatePane);
     fromLayout->addRow(fromLabel,fromDateEdit);
     fromDateEdit->setDisplayFormat(dateFormat);
 
@@ -181,10 +200,10 @@ void MainWindow::createRadioButton(QHBoxLayout *layout)
 
     shareRadioButton->setChecked(true);
     secType=security;
-    connect(shareRadioButton, SIGNAL(clicked(bool)),
-             this, SLOT(shareClicked(bool)));
-    connect(indexRadioButton, SIGNAL(clicked(bool)),
-             this, SLOT(indexClicked(bool)));
+    selectSecComboBox->addItems(symbolDesc->getAllDescriptions(secType));
+
+    connect(shareRadioButton, SIGNAL(clicked()), this, SLOT(shareClicked()));
+    connect(indexRadioButton, SIGNAL(clicked(bool)), this, SLOT(indexClicked()));
 }
 
 void MainWindow::createSearchButton(QHBoxLayout *layout, QWidget *parent)
@@ -194,23 +213,37 @@ void MainWindow::createSearchButton(QHBoxLayout *layout, QWidget *parent)
     connect(searchButton, SIGNAL(clicked()), this, SLOT(httpRequest()));
 }
 
-void MainWindow::shareClicked(bool is)
+QComboBox* MainWindow::createSelectSecComboBox(QWidget *parent)
 {
-    secType=security;
+    QComboBox *combo = new QComboBox(parent);
+
+
+    return combo;
 }
 
-void MainWindow::indexClicked(bool is)
+void MainWindow::shareClicked()
+{
+    secType=security;
+    selectSecComboBox->clear();
+    selectSecComboBox->addItems(symbolDesc->getAllDescriptions(secType));
+
+}
+
+void MainWindow::indexClicked()
 {
     secType=index;
+    selectSecComboBox->clear();
+    selectSecComboBox->addItems(symbolDesc->getAllDescriptions(secType));
 }
 
 void MainWindow::httpRequest()
 {
     QString dateFormat("yyyy-MM-dd");
 
-    QString sec("OPHC");
+    QString sec=symbolDesc->getSymbol(selectSecComboBox->currentIndex(),secType);
     QString from=fromDateEdit->date().toString(dateFormat);
     QString to=toDateEdit->date().toString(dateFormat);
+    qDebug()<<sec;
     QString domain("http://query.yahooapis.com/v1/public/yql?q=");
     QString query(" select * from   yahoo.finance.historicaldata"
                  " where symbol=%22"+sec+"%22 and startDate=%22"
@@ -221,9 +254,11 @@ void MainWindow::httpRequest()
     reply=qnam.get(QNetworkRequest(url));
     connect(reply, SIGNAL(finished()), this, SLOT(httpFinished()));
     connect(reply, SIGNAL(readyRead()), this, SLOT(httpReadyRead()));
+    //qDebug()<<"current text"<<selectSecComboBox->currentText();
+    //qDebug()<<"current index"<<selectSecComboBox->currentIndex();
 }
 
 MainWindow::~MainWindow()
 {
-
+    delete symbolDesc;
 }

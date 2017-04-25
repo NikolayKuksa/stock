@@ -22,8 +22,11 @@
 #include <QRadioButton>
 #include <QFormLayout>
 #include <QPushButton>
+#include <QComboBox>
 
-enum SecurityType{security, index};
+#include "secsymboldescription.h"
+
+//enum SecurityType{security, index};
 
 class MainWindow : public QMainWindow
 {
@@ -34,13 +37,14 @@ private slots:
     void httpFinished();
     void httpReadyRead();
     void httpRequest();
-    void shareClicked(bool is);
-    void indexClicked(bool is);
+    void shareClicked();
+    void indexClicked();
 
 
 private:
     QNetworkAccessManager qnam;
     QNetworkReply *reply;
+    SecSymbolDescription *symbolDesc;
    //Gui
     QGroupBox *calcPane;
     QGroupBox *searchPane;
@@ -49,11 +53,13 @@ private:
     QTableWidget* table;
     QDateEdit *fromDateEdit;
     QDateEdit *toDateEdit;
+    QComboBox *selectSecComboBox;
     SecurityType secType;
 
     void createRadioButton(QHBoxLayout *layout);
     void createDateEdit(QHBoxLayout *layout);
     void createSearchButton(QHBoxLayout *layout,QWidget *parent = 0);
+    QComboBox* createSelectSecComboBox(QWidget *parent = 0);
 
 public:
     MainWindow(QWidget *parent = 0);
