@@ -6,12 +6,8 @@ FinDataCollector::FinDataCollector(QAbstractButton *callingButton, QWidget *pare
     blockSize=12;
     data=new QStandardItemModel;
     this->setTextVisible(false);
+    this->setVisible(false);
     dataHeaders<<"Date"<<"Open"<<"High"<<"Low"<<"Close"<<"Volume"<<"Adj_Close";
-    /*QHBoxLayout *layout=new QHBoxLayout;
-    lbl=new QLabel("Label",this);
-    layout->addWidget(lbl);
-    this->setLayout(layout);*/
-
 }
 
 QStandardItemModel* FinDataCollector::getDataModel()
@@ -85,6 +81,8 @@ void FinDataCollector::httpFinished()
            newRow<<new QStandardItem((row.value("Adj_Close").toString()));
            data->appendRow(newRow);
        }
+
+       httpRequestCall();
 }
 
 void FinDataCollector::httpRequest(QString from, QString to)
@@ -113,20 +111,56 @@ void FinDataCollector::fetchData(QString fromDate, QString toDate, QString secId
     this->secId=secId;
     this->dateFormat=dateFormat;
 
+    QDate startDate=QDate::fromString(fromDate,dateFormat);
+    QDate endDate=QDate::fromString(toDate,dateFormat);
+    if (endDate<startDate)
+        return;
+
     if(callingButton!=0)
         callingButton->setEnabled(false);
     this->setVisible(true);
-
     data->clear();
     data->setHorizontalHeaderLabels(dataHeaders);
+    QDate tmp=endDate;
+    while (tmp>startDate) {
+        httpRequestDates<<tmp;
+        tmp=tmp.addMonths(-blockSize);
+    }
+    httpRequestDates<<startDate;
 
-    QString startDate(fromDate);
-    QString endDate(toDate);
+    this->reset();
+    this->setMinimum(0);
+    this->setMaximum(httpRequestDates.size()-1);
+    this->setValue(0);
 
-    httpRequest(startDate, endDate);
-    emit modelUpdated();
+    httpRequestCall();
+}
 
-    if(callingButton!=0)
-        callingButton->setEnabled(true);
-    this->setVisible(false);
+void FinDataCollector::httpRequestCall()
+{
+    if (httpRequestDates.size()<=1)
+    {
+        httpRequestDates.clear();
+        return;
+    }
+    bool isLastInterval=httpRequestDates.size()==2;
+    QString startDateStr;
+    QString endDateStr=httpRequestDates.first().toString(dateFormat);
+    httpRequestDates.pop_front();
+    QDate tmp=httpRequestDates.first();
+    if (isLastInterval)
+    {
+        startDateStr=tmp.toString(dateFormat);
+        httpRequest(startDateStr, endDateStr);
+        if(callingButton!=0)
+                callingButton->setEnabled(true);
+            this->setVisible(false);
+        return;
+    }
+    else
+        startDateStr=tmp.addDays(1).toString(dateFormat);
+
+    httpRequest(startDateStr, endDateStr);
+
+    this->setValue(this->value()+1);
 }

@@ -36,8 +36,6 @@ MainWindow::MainWindow(QWidget *parent)
     yahooCollector=new FinDataCollector(searchButton,searchPane);
     connect(this,SIGNAL(needData(QString, QString,QString,QString)),
             yahooCollector,SLOT(fetchData(QString,QString,QString,QString)));
-    connect(yahooCollector,SIGNAL(modelUpdated()),
-            this,SLOT());
 
     historicalDataLayout->addWidget(yahooCollector);
 

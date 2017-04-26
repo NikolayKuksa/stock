@@ -13,6 +13,8 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
+#include <QDate>
+#include <QStringList>
 
 #include "securitytype.h"
 
@@ -32,9 +34,12 @@ private:
     QNetworkAccessManager qnam;
     QNetworkReply *reply;
     QStringList dataHeaders;
+    QList<QDate> httpRequestDates;
 
     void httpRequest(QString from, QString to);
     QJsonArray parseJson(QByteArray jsonData);
+    void httpRequestCall();
+
 public:
     explicit FinDataCollector(QAbstractButton *callingButton=0,QWidget *parent = 0);
     QStandardItemModel* getDataModel();
