@@ -1,12 +1,34 @@
 #include "findatacollector.h"
 
-FinDataCollector::FinDataCollector(QAbstractButton *callingButton, QWidget *parent) : QProgressBar(parent)
+FinDataCollector::FinDataCollector(QAbstractButton *callingButton, QWidget *parent) : QDialog(parent)
 {
+    int nWidth = 200;
+    int nHeight = 100;
+    if (parent != NULL)
+        setGeometry(parent->x() + parent->width()/2 - nWidth/2,
+                    parent->y() + parent->height()/2 - nHeight/2,
+                    nWidth, nHeight);
+    else
+        resize(nWidth, nHeight);
+    this->setWindowFlags(Qt::Window|Qt::WindowTitleHint);
+    this->setWindowTitle("Data is importing");
+    this->setMinimumSize(this->size());
+    this->setMaximumSize(this->size());
+
+    this->setModal(true);
+    progressBar=new QProgressBar(this);
+
+    rowCount=0;
+    isLastInterval=false;
+
+    QHBoxLayout *layout = new QHBoxLayout;
+    this->setLayout(layout);
+    layout->addWidget(progressBar);
+
     this->callingButton=callingButton;
     blockSize=12;
-    data=new QStandardItemModel;
-    this->setTextVisible(false);
-    this->setVisible(false);
+    data=new QStandardItemModel(this);
+
     dataHeaders<<"Date"<<"Open"<<"High"<<"Low"<<"Close"<<"Volume"<<"Adj_Close";
 }
 
@@ -17,7 +39,7 @@ QStandardItemModel* FinDataCollector::getDataModel()
 
 QJsonArray FinDataCollector::parseJson(QByteArray jsonData)
 {
-    qDebug()<<jsonData.count();
+    //qDebug()<<jsonData.count();
     //qDebug()<<jsonData;
     QJsonParseError err;
     QJsonArray empty;
@@ -54,35 +76,20 @@ void FinDataCollector::httpFinished()
 {
     QByteArray jsonData=reply->readAll();
     QJsonArray quotes=parseJson(jsonData);
-        QJsonObject row;
-        /*for(size_t i=0;i<quotes.size();i++)
-        {
-            row=quotes.at(i).toObject();
-            qDebug()<<"Symbol: "<<row.value("Symbol");
-            qDebug()<<"Date: "<<row.value("Date");
-            qDebug()<<"Open: "<<row.value("Open");
-            qDebug()<<"High: "<<row.value("High");
-            qDebug()<<"Low: "<<row.value("Low");
-            qDebug()<<"Close: "<<row.value("Close");
-            qDebug()<<"Volume: "<<row.value("Volume");
-            qDebug()<<"Adj_Close: "<<row.value("Adj_Close");
-            qDebug()<<"---------------------------------";
-        }*/
+    QJsonObject newJsonRow;
 
-       for(int i=0;i<quotes.size();i++){
-           QList<QStandardItem *> newRow;
-           row=quotes.at(i).toObject();
-           newRow<<new QStandardItem((row.value("Date").toString()));
-           newRow<<new QStandardItem((row.value("Open").toString()));
-           newRow<<new QStandardItem((row.value("High").toString()));
-           newRow<<new QStandardItem((row.value("Low").toString()));
-           newRow<<new QStandardItem((row.value("Close").toString()));
-           newRow<<new QStandardItem((row.value("Volume").toString()));
-           newRow<<new QStandardItem((row.value("Adj_Close").toString()));
-           data->appendRow(newRow);
-       }
-
-       httpRequestCall();
+    for(int i=0;i<quotes.size();i++){
+        QList<QStandardItem *> newModelRow;
+        newJsonRow=quotes.at(i).toObject();
+        for (int j=0;j<dataHeaders.size();j++)
+            newModelRow<<new QStandardItem(newJsonRow.value(dataHeaders.at(j)).toString());
+        data->appendRow(newModelRow);
+        rowCount++;
+    }
+    if (isLastInterval)
+        emit modelUpdated(rowCount);
+    else
+        httpRequestCall();
 }
 
 void FinDataCollector::httpRequest(QString from, QString to)
@@ -118,7 +125,9 @@ void FinDataCollector::fetchData(QString fromDate, QString toDate, QString secId
 
     if(callingButton!=0)
         callingButton->setEnabled(false);
-    this->setVisible(true);
+    this->show();
+    isLastInterval=false;
+    rowCount=0;
     data->clear();
     data->setHorizontalHeaderLabels(dataHeaders);
     QDate tmp=endDate;
@@ -128,10 +137,10 @@ void FinDataCollector::fetchData(QString fromDate, QString toDate, QString secId
     }
     httpRequestDates<<startDate;
 
-    this->reset();
-    this->setMinimum(0);
-    this->setMaximum(httpRequestDates.size()-1);
-    this->setValue(0);
+    progressBar->reset();
+    progressBar->setMinimum(0);
+    progressBar->setMaximum(httpRequestDates.size()-1);
+    progressBar->setValue(0);
 
     httpRequestCall();
 }
@@ -143,7 +152,7 @@ void FinDataCollector::httpRequestCall()
         httpRequestDates.clear();
         return;
     }
-    bool isLastInterval=httpRequestDates.size()==2;
+    isLastInterval=httpRequestDates.size()==2;
     QString startDateStr;
     QString endDateStr=httpRequestDates.first().toString(dateFormat);
     httpRequestDates.pop_front();
@@ -154,7 +163,7 @@ void FinDataCollector::httpRequestCall()
         httpRequest(startDateStr, endDateStr);
         if(callingButton!=0)
                 callingButton->setEnabled(true);
-            this->setVisible(false);
+        this->hide();
         return;
     }
     else
@@ -162,5 +171,10 @@ void FinDataCollector::httpRequestCall()
 
     httpRequest(startDateStr, endDateStr);
 
-    this->setValue(this->value()+1);
+    progressBar->setValue(progressBar->value()+1);
+}
+
+void FinDataCollector::setDataHeaders(QStringList headers)
+{
+    this->dataHeaders=headers;
 }

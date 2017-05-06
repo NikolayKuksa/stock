@@ -180,19 +180,7 @@ void MainWindow::histTableViewChanged(int rowCount)
 
 void MainWindow::histPlotButtonClicked()
 {
-    qDebug()<<"Plot button is clicked";
     QStandardItemModel *model=yahooCollector->getDataModel();
-    QModelIndex ix= model->index(2,1);
-    qDebug()<<model->headerData(0,Qt::Horizontal).toString();
-    //qDebug()<<yahooCollector->getDataModel()->item(1,1)->data(Qt::DisplayRole).toString();
-     //qDebug()<<"By index: "<<ix.isValid()<<"    "<<ix.data(Qt::DisplayRole).toString();
-     //qDebug()<<"bad index: "<<yahooCollector->getDataModel()->index(20,0).isValid();
-    /*List<QStandardItem*> items= yahooCollector->getDataModel()
-    for (int i=0; i<items.length();i++)
-    {
-        qDebug()<<items.first()->data(Qt::DisplayRole).toString();
-        items.pop_front();
-    }*/
     QString format("dd.MM.yyyy");
     histDataPlot=new PlotByModel(dateFormat,plotDateFormat,"Price",this);
     QString plotTitle(selectSecComboBox->currentText());

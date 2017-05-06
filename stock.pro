@@ -6,7 +6,7 @@
 
 QT       += core gui
 QT       += network
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 TARGET = stock
 TEMPLATE = app
@@ -15,9 +15,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     secsymboldescription.cpp \
-    findatacollector.cpp
+    findatacollector.cpp \
+    plotbymodel.cpp \
+    qcustomplot.cpp
 
 HEADERS  += mainwindow.h \
     secsymboldescription.h \
     findatacollector.h \
-    securitytype.h
+    securitytype.h \
+    plotbymodel.h \
+    qcustomplot.h

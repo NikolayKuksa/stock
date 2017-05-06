@@ -15,15 +15,16 @@
 #include <QList>
 #include <QDate>
 #include <QStringList>
+#include <QDialog>
 
 #include "securitytype.h"
 
-class FinDataCollector : public QProgressBar
+class FinDataCollector : public QDialog
 {
     Q_OBJECT
 
 private:
-    //QLabel *lbl;
+    QProgressBar *progressBar;
     QAbstractButton *callingButton;
     QString fromDate;
     QString toDate;
@@ -35,6 +36,8 @@ private:
     QNetworkReply *reply;
     QStringList dataHeaders;
     QList<QDate> httpRequestDates;
+    int rowCount;
+    bool isLastInterval;
 
     void httpRequest(QString from, QString to);
     QJsonArray parseJson(QByteArray jsonData);
@@ -43,9 +46,10 @@ private:
 public:
     explicit FinDataCollector(QAbstractButton *callingButton=0,QWidget *parent = 0);
     QStandardItemModel* getDataModel();
+    void setDataHeaders(QStringList headers);
 
 signals:
-    void modelUpdated();
+    void modelUpdated(int);
 
 private slots:
     //void downloadFile();
