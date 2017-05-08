@@ -5,6 +5,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     dateFormat=QString("yyyy-MM-dd");
     plotDateFormat=QString("d. MMMM\nyyyy");
+    days=7;
 
     this->resize(QDesktopWidget().availableGeometry(this).size() * 0.7);
     mainLayout=new QBoxLayout(QBoxLayout::LeftToRight);
@@ -41,11 +42,45 @@ MainWindow::MainWindow(QWidget *parent)
             yahooCollector,SLOT(fetchData(QString,QString,QString,QString)));
 
 
+    //select fields for buiding plot
+    QHBoxLayout *plotFieldsLayout=new QHBoxLayout;
+    QGroupBox *plotFieldsPane = new QGroupBox(tr("Which prices would you like to see plot?"));
+    plotFieldsPane->setLayout(plotFieldsLayout);
+    historicalDataLayout->addWidget(plotFieldsPane);
+
+    openPriceCheckBox=new QCheckBox(tr("Open"),plotFieldsPane);
+    plotFieldsLayout->addWidget(openPriceCheckBox);
+    connect(openPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    closePriceCheckBox=new QCheckBox(tr("Close"),plotFieldsPane);
+    plotFieldsLayout->addWidget(closePriceCheckBox);
+    connect(closePriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    lowPriceCheckBox=new QCheckBox(tr("Low"),plotFieldsPane);
+    plotFieldsLayout->addWidget(lowPriceCheckBox);
+    connect(lowPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    highPriceCheckBox=new QCheckBox(tr("High"),plotFieldsPane);
+    plotFieldsLayout->addWidget(highPriceCheckBox);
+    connect(highPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    QPushButton *selectAllPlotFieldsButton=new QPushButton(tr("Select all"),plotFieldsPane);
+    plotFieldsLayout->addWidget(selectAllPlotFieldsButton);
+    connect(selectAllPlotFieldsButton,SIGNAL(clicked(bool)),this,SLOT(selectAllPlotFieldsButtonClicked()));
+
+    QPushButton *deselectAllPlotFieldsButton=new QPushButton(tr("Deselect all"),plotFieldsPane);
+    plotFieldsLayout->addWidget(deselectAllPlotFieldsButton);
+    connect(deselectAllPlotFieldsButton,SIGNAL(clicked(bool)),this,SLOT(deselectAllPlotFieldsButtonClicked()));
+
+    openPriceCheckBox->setChecked(true);
+    plotFieldsCount=1;
+    atLeastOnePlotFieldsChecked=true;
+
+    //hist table grid-----------
     histTableView=new QTableView;
     histTableView->setModel(yahooCollector->getDataModel());
     historicalDataLayout->addWidget(histTableView);
     connect(yahooCollector,SIGNAL(modelUpdated(int)), this, SLOT(histTableViewChanged(int)));
-    qDebug()<<"0 0 index: "<<yahooCollector->getDataModel()->index(0,0).isValid();
 
     QHBoxLayout *exportHistTableViewDataLayout=new QHBoxLayout;
     historicalDataLayout->addLayout(exportHistTableViewDataLayout);
@@ -60,7 +95,6 @@ MainWindow::MainWindow(QWidget *parent)
     histDataToFileButton->setEnabled(false);
     connect(histDataToFileButton, SIGNAL(clicked()), this, SLOT(histDataToFileButtonClicked()));
 
-
     //==================================================
     mainLayout->addWidget(calcPane,1);
     mainLayout->addWidget(historicalDataPane,1);
@@ -70,10 +104,8 @@ MainWindow::MainWindow(QWidget *parent)
     wlayout->setLayout(mainLayout);
     this->setCentralWidget(wlayout);
 
-    plotFields<<"Open"<<"Close"<<"High"<<"Low"<<"Date";
-    //histDataPlot=new PlotByModel(dateFormat,plotDateFormat,this);
-    //pl->setModal(true);
-    //pl->show();
+    histGridHasData=false;
+
 }
 
 void MainWindow::createDateEdit(QHBoxLayout *layout)
@@ -85,12 +117,14 @@ void MainWindow::createDateEdit(QHBoxLayout *layout)
     QFormLayout *fromLayout=new QFormLayout;
     QLabel *fromLabel =new QLabel("From",fromToDatePane);
     fromDateEdit = new QDateEdit(QDate::currentDate().addDays(-1500),fromToDatePane);
+    connect(fromDateEdit,SIGNAL(dateChanged(QDate)),this,SLOT(fromDateEditValidate(QDate)));
     fromLayout->addRow(fromLabel,fromDateEdit);
     fromDateEdit->setDisplayFormat(dateFormat);
 
     QFormLayout *toLayout=new QFormLayout;
     QLabel *toLabel = new QLabel("To",fromToDatePane);
     toDateEdit = new QDateEdit(QDate::currentDate(),toLabel);
+    connect(toDateEdit,SIGNAL(dateChanged(QDate)),this,SLOT(toDateEditValidate(QDate)));
     toLayout->addRow(toLabel,toDateEdit);
     toDateEdit->setDisplayFormat(dateFormat);
 
@@ -172,27 +206,14 @@ void MainWindow::indexClicked()
 
 void MainWindow::histTableViewChanged(int rowCount)
 {
-    bool flag=rowCount!=0;
-    histPlotButton->setEnabled(flag);
-    histDataToFileButton->setEnabled(flag);
-
+    histGridHasData=rowCount!=0;
+    bool plotButtonEnabled=histGridHasData&&atLeastOnePlotFieldsChecked;
+    histPlotButton->setEnabled(plotButtonEnabled);
+    histDataToFileButton->setEnabled(histGridHasData);
 }
 
 void MainWindow::histPlotButtonClicked()
 {
-    qDebug()<<"Plot button is clicked";
-    QStandardItemModel *model=yahooCollector->getDataModel();
-    QModelIndex ix= model->index(2,1);
-    qDebug()<<model->headerData(0,Qt::Horizontal).toString();
-    //qDebug()<<yahooCollector->getDataModel()->item(1,1)->data(Qt::DisplayRole).toString();
-     //qDebug()<<"By index: "<<ix.isValid()<<"    "<<ix.data(Qt::DisplayRole).toString();
-     //qDebug()<<"bad index: "<<yahooCollector->getDataModel()->index(20,0).isValid();
-    /*List<QStandardItem*> items= yahooCollector->getDataModel()
-    for (int i=0; i<items.length();i++)
-    {
-        qDebug()<<items.first()->data(Qt::DisplayRole).toString();
-        items.pop_front();
-    }*/
     QString format("dd.MM.yyyy");
     histDataPlot=new PlotByModel(dateFormat,plotDateFormat,"Price",this);
     QString plotTitle(selectSecComboBox->currentText());
@@ -254,8 +275,60 @@ void MainWindow::histDataToFileButtonClicked()
     }
 }
 
+void MainWindow::fromDateEditValidate(QDate newDate)
+{
+    if (newDate.addDays(days)>toDateEdit->date())
+        fromDateEdit->setDate(toDateEdit->date().addDays(-days));
+}
+
+void MainWindow::toDateEditValidate(QDate newDate)
+{
+    if (fromDateEdit->date()>=newDate.addDays(-days))
+        toDateEdit->setDate(fromDateEdit->date().addDays(days));
+}
+
+void MainWindow::priceFieldsForPlotCheckBoxClicked(bool isChecked)
+{
+    if (isChecked)
+    {
+        plotFieldsCount++;
+        histPlotButton->setEnabled(histGridHasData);
+        atLeastOnePlotFieldsChecked=true;
+    }
+    else
+    {
+        plotFieldsCount--;
+        if(plotFieldsCount==0)
+        histPlotButton->setEnabled(atLeastOnePlotFieldsChecked=false);
+    }
+}
+
+void MainWindow::selectAllPlotFieldsButtonClicked()
+{
+    bool b=true;
+    openPriceCheckBox->setChecked(b);
+    closePriceCheckBox->setChecked(b);
+    lowPriceCheckBox->setChecked(b);
+    highPriceCheckBox->setChecked(b);
+    plotFieldsCount=4;
+    histPlotButton->setEnabled(histGridHasData);
+    atLeastOnePlotFieldsChecked=b;
+}
+
+void MainWindow::deselectAllPlotFieldsButtonClicked()
+{
+    bool b=false;
+    openPriceCheckBox->setChecked(b);
+    closePriceCheckBox->setChecked(b);
+    lowPriceCheckBox->setChecked(b);
+    highPriceCheckBox->setChecked(b);
+    plotFieldsCount=0;
+    histPlotButton->setEnabled(atLeastOnePlotFieldsChecked=b);
+}
+
 QStandardItemModel* MainWindow::prepareModelForPlot(QStandardItemModel *model)
 {
+    QStringList plotFields=getPlotFields();
     QStandardItemModel *resModel=new QStandardItemModel;
     QList<QStandardItem *> newModelColumn;
     QString curHeader;
@@ -281,6 +354,21 @@ QStandardItemModel* MainWindow::prepareModelForPlot(QStandardItemModel *model)
         ix=model->index(i=0,++j);
     }
     return resModel;
+}
+
+QStringList MainWindow::getPlotFields()
+{
+    QStringList plotFields;
+    plotFields<<"Date";
+    if(openPriceCheckBox->isChecked())
+        plotFields<<"Open";
+    if(closePriceCheckBox->isChecked())
+        plotFields<<"Close";
+    if(lowPriceCheckBox->isChecked())
+        plotFields<<"Low";
+    if(highPriceCheckBox->isChecked())
+        plotFields<<"High";
+    return plotFields;
 }
 
 MainWindow::~MainWindow()
