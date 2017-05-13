@@ -78,11 +78,19 @@ void FinDataCollector::httpFinished()
     QJsonArray quotes=parseJson(jsonData);
     QJsonObject newJsonRow;
 
+    QString newVal,header;
     for(int i=0;i<quotes.size();i++){
         QList<QStandardItem *> newModelRow;
         newJsonRow=quotes.at(i).toObject();
         for (int j=0;j<dataHeaders.size();j++)
-            newModelRow<<new QStandardItem(newJsonRow.value(dataHeaders.at(j)).toString());
+        {
+            header=dataHeaders.at(j);
+            if(header!="Date")
+                newVal= numberFormat(newJsonRow.value(header).toString());
+            else
+                newVal=newJsonRow.value(header).toString();
+            newModelRow<<new QStandardItem(newVal);
+        }
         data->appendRow(newModelRow);
         rowCount++;
     }

@@ -21,10 +21,14 @@ private:
     QStandardItemModel *dataModel;
     QVector<QColor> plotColors;
     QString yAxisLabel;
+    int yScaleMaxPlus;
+    int yScaleMinMinus;
 public:
     PlotByModel(QString inDateFormat, QString outDateFormat, QString yAxisLabel, QWidget *parent = 0);
     void setDataModel(QStandardItemModel *model);
     void makePlot();
+    void setYscaleRange(int maxPlus,int minMinus);
+
 
     ~PlotByModel();
 };

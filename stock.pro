@@ -17,11 +17,15 @@ SOURCES += main.cpp\
     secsymboldescription.cpp \
     findatacollector.cpp \
     plotbymodel.cpp \
-    qcustomplot.cpp
+    qcustomplot.cpp \
+    miscimpl.cpp \
+    fincalculator.cpp
 
 HEADERS  += mainwindow.h \
     secsymboldescription.h \
     findatacollector.h \
     securitytype.h \
     plotbymodel.h \
-    qcustomplot.h
+    qcustomplot.h \
+    miscdef.h \
+    fincalculator.h

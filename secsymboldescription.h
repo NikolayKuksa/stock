@@ -3,6 +3,7 @@
 
 #include <QVector>
 #include "securitytype.h"
+#include "miscdef.h"
 
 
 class SecSymbolDescription

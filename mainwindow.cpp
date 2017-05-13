@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     calcPane = new QGroupBox(tr("Calculation"));
     QHBoxLayout *controlLayout = new QHBoxLayout;
     //add widgets here
-    calcPane->setLayout(controlLayout);
+    //calcPane->setLayout(controlLayout);
     //==================================================
 
     //==========Historical data pane=================== 
@@ -41,40 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this,SIGNAL(needData(QString, QString,QString,QString)),
             yahooCollector,SLOT(fetchData(QString,QString,QString,QString)));
 
-
     //select fields for buiding plot
-    QHBoxLayout *plotFieldsLayout=new QHBoxLayout;
-    QGroupBox *plotFieldsPane = new QGroupBox(tr("Which prices would you like to see plot?"));
-    plotFieldsPane->setLayout(plotFieldsLayout);
-    historicalDataLayout->addWidget(plotFieldsPane);
-
-    openPriceCheckBox=new QCheckBox(tr("Open"),plotFieldsPane);
-    plotFieldsLayout->addWidget(openPriceCheckBox);
-    connect(openPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
-
-    closePriceCheckBox=new QCheckBox(tr("Close"),plotFieldsPane);
-    plotFieldsLayout->addWidget(closePriceCheckBox);
-    connect(closePriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
-
-    lowPriceCheckBox=new QCheckBox(tr("Low"),plotFieldsPane);
-    plotFieldsLayout->addWidget(lowPriceCheckBox);
-    connect(lowPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
-
-    highPriceCheckBox=new QCheckBox(tr("High"),plotFieldsPane);
-    plotFieldsLayout->addWidget(highPriceCheckBox);
-    connect(highPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
-
-    QPushButton *selectAllPlotFieldsButton=new QPushButton(tr("Select all"),plotFieldsPane);
-    plotFieldsLayout->addWidget(selectAllPlotFieldsButton);
-    connect(selectAllPlotFieldsButton,SIGNAL(clicked(bool)),this,SLOT(selectAllPlotFieldsButtonClicked()));
-
-    QPushButton *deselectAllPlotFieldsButton=new QPushButton(tr("Deselect all"),plotFieldsPane);
-    plotFieldsLayout->addWidget(deselectAllPlotFieldsButton);
-    connect(deselectAllPlotFieldsButton,SIGNAL(clicked(bool)),this,SLOT(deselectAllPlotFieldsButtonClicked()));
-
-    openPriceCheckBox->setChecked(true);
-    plotFieldsCount=1;
-    atLeastOnePlotFieldsChecked=true;
+    createCheckBoxesPlotFields(historicalDataLayout);
 
     //hist table grid-----------
     histTableView=new QTableView;
@@ -99,13 +67,35 @@ MainWindow::MainWindow(QWidget *parent)
     mainLayout->addWidget(calcPane,1);
     mainLayout->addWidget(historicalDataPane,1);
 
+    finCalculator=new FinCalculator(this);
+    finCalculator->setModel(yahooCollector->getDataModel());
+    connect(yahooCollector,SIGNAL(modelUpdated(int)), finCalculator, SLOT(recalculate(int)));
+    connect(finCalculator,SIGNAL(recalculated(int)),this,SLOT(updateCalcGrid(int)));
+
+    QVBoxLayout *calcPaneLayout = new QVBoxLayout;
+    calcPane->setLayout(calcPaneLayout);
+
+    calculatedDataTableView=new QTableView(calcPane);
+    calculatedDataTableView->setModel(finCalculator->getModel());
+    calcPaneLayout->addWidget(calculatedDataTableView);
+
+    returnPlotButton=new QPushButton("Make plot for return value",calcPane);
+    returnPlotButton->setEnabled(false);
+    connect(returnPlotButton,SIGNAL(clicked()),this,SLOT(returnPlotButtonClicked()));
+    calcPaneLayout->addWidget(returnPlotButton);
+
+
+
+
+
+    //===================================
+
     //set layout on window
     QWidget* wlayout=new QWidget;
     wlayout->setLayout(mainLayout);
     this->setCentralWidget(wlayout);
 
     histGridHasData=false;
-
 }
 
 void MainWindow::createDateEdit(QHBoxLayout *layout)
@@ -206,6 +196,7 @@ void MainWindow::indexClicked()
 
 void MainWindow::histTableViewChanged(int rowCount)
 {
+    qDebug()<<rowCount;
     histGridHasData=rowCount!=0;
     bool plotButtonEnabled=histGridHasData&&atLeastOnePlotFieldsChecked;
     histPlotButton->setEnabled(plotButtonEnabled);
@@ -216,6 +207,7 @@ void MainWindow::histPlotButtonClicked()
 {
     QString format("dd.MM.yyyy");
     histDataPlot=new PlotByModel(dateFormat,plotDateFormat,"Price",this);
+    histDataPlot->setYscaleRange(20,10);
     QString plotTitle(selectSecComboBox->currentText());
     plotTitle.append("  ");
     plotTitle.append(fromDateEdit->date().toString(format));
@@ -225,6 +217,26 @@ void MainWindow::histPlotButtonClicked()
     histDataPlot->setDataModel(prepareModelForPlot(yahooCollector->getDataModel()));
     histDataPlot->show();
     histDataPlot->makePlot();
+}
+
+void MainWindow::returnPlotButtonClicked()
+{
+    QString format("dd.MM.yyyy");
+    PlotByModel *plot=new PlotByModel(dateFormat,plotDateFormat,"Historical return of asset",this);
+    QString plotTitle(selectSecComboBox->currentText());
+    plotTitle.append("  ");
+    //plotTitle.append("");
+    plotTitle.append(fromDateEdit->date().toString(format));
+    plotTitle.append("-");
+    plotTitle.append(toDateEdit->date().toString(format));
+    plot->setWindowTitle(plotTitle);
+    QStringList headers;
+    headers<<"Date"<<"Return";
+    QStandardItemModel *plotModel=cutModelChangeDirection(finCalculator->getModel(),headers,back);
+    plot->setDataModel(plotModel);
+    plot->setYscaleRange(0.5,0.5);
+    plot->show();
+    plot->makePlot();
 }
 
 void MainWindow::histDataToFileButtonClicked()
@@ -328,7 +340,7 @@ void MainWindow::deselectAllPlotFieldsButtonClicked()
 
 QStandardItemModel* MainWindow::prepareModelForPlot(QStandardItemModel *model)
 {
-    QStringList plotFields=getPlotFields();
+    QStringList plotFields=getHistPlotFields();
     QStandardItemModel *resModel=new QStandardItemModel;
     QList<QStandardItem *> newModelColumn;
     QString curHeader;
@@ -356,7 +368,7 @@ QStandardItemModel* MainWindow::prepareModelForPlot(QStandardItemModel *model)
     return resModel;
 }
 
-QStringList MainWindow::getPlotFields()
+QStringList MainWindow::getHistPlotFields()
 {
     QStringList plotFields;
     plotFields<<"Date";
@@ -369,6 +381,48 @@ QStringList MainWindow::getPlotFields()
     if(highPriceCheckBox->isChecked())
         plotFields<<"High";
     return plotFields;
+}
+
+void MainWindow::createCheckBoxesPlotFields(QVBoxLayout *layout)
+{
+    QHBoxLayout *plotFieldsLayout=new QHBoxLayout;
+    QGroupBox *plotFieldsPane = new QGroupBox(tr("Which prices would you like to see on plot?"));
+    plotFieldsPane->setLayout(plotFieldsLayout);
+    layout->addWidget(plotFieldsPane);
+
+    openPriceCheckBox=new QCheckBox(tr("Open"),plotFieldsPane);
+    plotFieldsLayout->addWidget(openPriceCheckBox);
+    connect(openPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    closePriceCheckBox=new QCheckBox(tr("Close"),plotFieldsPane);
+    plotFieldsLayout->addWidget(closePriceCheckBox);
+    connect(closePriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    lowPriceCheckBox=new QCheckBox(tr("Low"),plotFieldsPane);
+    plotFieldsLayout->addWidget(lowPriceCheckBox);
+    connect(lowPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    highPriceCheckBox=new QCheckBox(tr("High"),plotFieldsPane);
+    plotFieldsLayout->addWidget(highPriceCheckBox);
+    connect(highPriceCheckBox,SIGNAL(clicked(bool)),this,SLOT(priceFieldsForPlotCheckBoxClicked(bool)));
+
+    QPushButton *selectAllPlotFieldsButton=new QPushButton(tr("Select all"),plotFieldsPane);
+    plotFieldsLayout->addWidget(selectAllPlotFieldsButton);
+    connect(selectAllPlotFieldsButton,SIGNAL(clicked(bool)),this,SLOT(selectAllPlotFieldsButtonClicked()));
+
+    QPushButton *deselectAllPlotFieldsButton=new QPushButton(tr("Deselect all"),plotFieldsPane);
+    plotFieldsLayout->addWidget(deselectAllPlotFieldsButton);
+    connect(deselectAllPlotFieldsButton,SIGNAL(clicked(bool)),this,SLOT(deselectAllPlotFieldsButtonClicked()));
+
+    openPriceCheckBox->setChecked(true);
+    plotFieldsCount=1;
+    atLeastOnePlotFieldsChecked=true;
+}
+
+void MainWindow::updateCalcGrid(int rowCount)
+{
+    returnPlotButton->setEnabled(rowCount!=0);
+    calculatedDataTableView->setModel(finCalculator->getModel());
 }
 
 MainWindow::~MainWindow()

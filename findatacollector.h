@@ -18,6 +18,7 @@
 #include <QDialog>
 
 #include "securitytype.h"
+#include "miscdef.h"
 
 class FinDataCollector : public QDialog
 {
@@ -52,11 +53,7 @@ signals:
     void modelUpdated(int);
 
 private slots:
-    //void downloadFile();
-    //void cancelDownload();
     void httpFinished();
-    //void httpReadyRead();
-
 
 public slots:
     void fetchData(QString fromDate, QString toDate, QString secId, QString dateFormat);

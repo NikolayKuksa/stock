@@ -13,8 +13,12 @@ PlotByModel::PlotByModel(QString inDateFormat, QString outDateFormat, QString yA
     plotColors.push_back(QColor(Qt::yellow));
     plotColors.push_back(QColor(Qt::cyan));
 
-    int nWidth = 600;
-    int nHeight = 600;
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect  screenGeometry = screen->geometry();
+    int height = screenGeometry.height();
+    int width = screenGeometry.width();
+    int nWidth = width;
+    int nHeight = height/2;
     if (parent != NULL)
         setGeometry(parent->x() + parent->width()/2 - nWidth/2,
                     parent->y() + parent->height()/2 - nHeight/2,
@@ -33,7 +37,7 @@ PlotByModel::PlotByModel(QString inDateFormat, QString outDateFormat, QString yA
 
 
 
-/*
+    /*
     customPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
     customPlot->legend->setVisible(true);
     customPlot->xAxis->setLabel("xxx");
@@ -105,25 +109,25 @@ void PlotByModel::makePlot()
     ix=dataModel->index(0,j);
     while(ix.isValid())
     {
-      customPlot->addGraph();
-      customPlot->graph()->setLineStyle(QCPGraph::lsLine);
-      customPlot->graph()->setPen(plotColors.at(j-1));
-      customPlot->graph()->setName(dataModel->headerData(j,Qt::Horizontal).toString());
-      QVector<double> yAxisData(xlen);
-      for (int i=0; i<xlen; i++)
-      {
-        //double tmp= dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();
-        //qDebug()<<"tmp: "<<tmp<<"  j="<<j;
-        yAxisData[i]=dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();;
-      }
-      customPlot->graph()->setData(xAxisData,yAxisData,true);
+        customPlot->addGraph();
+        customPlot->graph()->setLineStyle(QCPGraph::lsLine);
+        customPlot->graph()->setPen(plotColors.at(j-1));
+        customPlot->graph()->setName(dataModel->headerData(j,Qt::Horizontal).toString());
+        QVector<double> yAxisData(xlen);
+        for (int i=0; i<xlen; i++)
+        {
+            //double tmp= dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();
+            //qDebug()<<"tmp: "<<tmp<<"  j="<<j;
+            yAxisData[i]=dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();;
+        }
+        customPlot->graph()->setData(xAxisData,yAxisData,true);
+        customPlot->graph()->rescaleAxes(true);
+        tmp=*std::min_element(yAxisData.constBegin(), yAxisData.constEnd());
+        Ymin=tmp<Ymin?tmp:Ymin;
+        tmp=*std::max_element(yAxisData.constBegin(), yAxisData.constEnd());
+        Ymax=tmp>Ymax?tmp:Ymax;
 
-      tmp=*std::min_element(yAxisData.constBegin(), yAxisData.constEnd());
-      Ymin=tmp<Ymin?tmp:Ymin;
-      tmp=*std::max_element(yAxisData.constBegin(), yAxisData.constEnd());
-      Ymax=tmp>Ymax?tmp:Ymax;
-
-      ix=dataModel->index(0,++j);
+        ix=dataModel->index(0,++j);
     }
 
     QSharedPointer<QCPAxisTickerDateTime> dateTicker(new QCPAxisTickerDateTime);
@@ -139,7 +143,7 @@ void PlotByModel::makePlot()
 
     // set axis ranges to show all data:
     customPlot->xAxis->setRange(xAxisData.at(0), xAxisData.at(xlen-1));
-    customPlot->yAxis->setRange(Ymin-10, Ymax+20);
+    customPlot->yAxis->setRange(Ymin-yScaleMinMinus, Ymax+yScaleMaxPlus);
 
     customPlot->legend->setVisible(true);
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
@@ -148,4 +152,10 @@ void PlotByModel::makePlot()
 PlotByModel::~PlotByModel()
 {
     delete customPlot;
+}
+
+void PlotByModel::setYscaleRange(int maxPlus, int minMinus)
+{
+    this->yScaleMaxPlus=maxPlus;
+    this->yScaleMinMinus=minMinus;
 }

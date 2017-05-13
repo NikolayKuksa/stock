@@ -29,6 +29,8 @@
 #include "secsymboldescription.h"
 #include "findatacollector.h"
 #include "plotbymodel.h"
+#include "miscdef.h"
+#include "fincalculator.h"
 
 class MainWindow : public QMainWindow
 {
@@ -45,6 +47,7 @@ private slots:
     void priceFieldsForPlotCheckBoxClicked(bool isChecked);
     void selectAllPlotFieldsButtonClicked();
     void deselectAllPlotFieldsButtonClicked();
+    void returnPlotButtonClicked();
 
 private:
     SecurityType secType;
@@ -53,6 +56,7 @@ private:
     SecSymbolDescription *symbolDesc;
     FinDataCollector *yahooCollector;
     PlotByModel *histDataPlot;
+    FinCalculator *finCalculator;
     QString dateFormat;
     QString plotDateFormat;
     bool atLeastOnePlotFieldsChecked;
@@ -76,6 +80,8 @@ private:
     QCheckBox *closePriceCheckBox;
     QCheckBox *lowPriceCheckBox;
     QCheckBox *highPriceCheckBox;
+    QTableView *calculatedDataTableView;
+    QPushButton *returnPlotButton;
 
     void createRadioButton(QHBoxLayout *layout);
     void createDateEdit(QHBoxLayout *layout);
@@ -83,13 +89,17 @@ private:
     void createSelectSecComboBox(QBoxLayout *layout, QWidget *parent = 0);
     void createSelectSecComboBox(QGridLayout *layout, QWidget *parent = 0, int row=0, int column=0);
     QStandardItemModel *prepareModelForPlot(QStandardItemModel *model);
-    QStringList getPlotFields();
+    QStringList getHistPlotFields();
+    void createCheckBoxesPlotFields(QVBoxLayout *layout);
 
 signals:
     void needData(QString, QString, QString, QString);
 public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+public slots:
+    void updateCalcGrid(int rowCount);
 };
 
 #endif // MAINWINDOW_H
