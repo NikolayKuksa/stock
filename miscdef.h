@@ -8,6 +8,8 @@
 #include <QStandardItem>
 #include <QDate>
 #include <QDebug>
+#include <QMap>
+#include <QPair>
 
 enum SecurityType{security, index};
 enum ModelDirection{forward,back,oneRow};
@@ -19,6 +21,7 @@ QList<QStandardItem *> doubleVectorToModelColumn(QVector<double> values, ModelDi
 QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, ModelDirection direction=forward);
 ModelDirection calcDirection(QStandardItemModel *model, QString inDateFormat, int column=0);
 void appendValuesToModel(QStandardItemModel *model, QString header, QVector<double> values);
+double mathE(QVector<double> xi,QVector<double> pi);
 
 #endif // MISCDEF
 

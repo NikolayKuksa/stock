@@ -140,3 +140,12 @@ void appendValuesToModel(QStandardItemModel *model,QString header, QVector<doubl
     QStandardItem * headerItem=new QStandardItem(header);
     model->setHorizontalHeaderItem(columnCount,headerItem);
 }
+
+double mathE(QVector<double> xi, QVector<double> pi)
+{
+    double res=0;
+    int n=std::min(xi.length(),pi.length());
+    for(int i=0;i<n;i++)
+        res+=xi.at(i)*pi.at(i);
+    return res;
+}

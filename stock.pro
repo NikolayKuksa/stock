@@ -19,7 +19,9 @@ SOURCES += main.cpp\
     plotbymodel.cpp \
     qcustomplot.cpp \
     miscimpl.cpp \
-    fincalculator.cpp
+    fincalculator.cpp \
+    portfoliooptimisationwindow.cpp \
+    recalgcalc.cpp
 
 HEADERS  += mainwindow.h \
     secsymboldescription.h \
@@ -28,4 +30,6 @@ HEADERS  += mainwindow.h \
     plotbymodel.h \
     qcustomplot.h \
     miscdef.h \
-    fincalculator.h
+    fincalculator.h \
+    portfoliooptimisationwindow.h \
+    recalgcalc.h
