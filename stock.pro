@@ -13,7 +13,6 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
     secsymboldescription.cpp \
     findatacollector.cpp \
     plotbymodel.cpp \
@@ -21,9 +20,12 @@ SOURCES += main.cpp\
     miscimpl.cpp \
     fincalculator.cpp \
     portfoliooptimisationwindow.cpp \
-    recalgcalc.cpp
+    recalgcalc.cpp \
+    importviewdatawindow.cpp \
+    mainwindow.cpp \
+    recalgwindow.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += \
     secsymboldescription.h \
     findatacollector.h \
     securitytype.h \
@@ -32,4 +34,7 @@ HEADERS  += mainwindow.h \
     miscdef.h \
     fincalculator.h \
     portfoliooptimisationwindow.h \
-    recalgcalc.h
+    recalgcalc.h \
+    importviewdatawindow.h \
+    mainwindow.h \
+    recalgwindow.h
