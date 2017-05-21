@@ -71,6 +71,10 @@ ImportViewDataWindow::ImportViewDataWindow(QWidget *parent)
     histDataToFileButton->setEnabled(false);
     connect(histDataToFileButton, SIGNAL(clicked()), this, SLOT(histDataToFileButtonClicked()));
 
+    QPushButton *loadFileButton=new QPushButton(tr("&Load file"),historicalDataPane);
+    exportHistTableViewDataLayout->addWidget(loadFileButton);
+    connect(loadFileButton, SIGNAL(clicked()), this, SLOT(loadFileButtonClicked()));
+
     //==================================================
     mainLayout->addWidget(calcPane,1);
     mainLayout->addWidget(historicalDataPane,1);
@@ -78,6 +82,7 @@ ImportViewDataWindow::ImportViewDataWindow(QWidget *parent)
     finCalculator=new FinCalculator(this);
     finCalculator->setModel(yahooCollector->getDataModel());
     connect(yahooCollector,SIGNAL(modelUpdated(int)), finCalculator, SLOT(recalculate(int)));
+    connect(this,SIGNAL(showCalcGridFromCSV(int)),finCalculator,SLOT(recalculate(int)));
     connect(finCalculator,SIGNAL(recalculated(int)),this,SLOT(updateCalcGrid(int)));
 
     QVBoxLayout *calcPaneLayout = new QVBoxLayout;
@@ -161,19 +166,18 @@ void ImportViewDataWindow::createSearchButton(QHBoxLayout *layout, QWidget *pare
 }
 
 void ImportViewDataWindow::searchButtonClicked(){
+    if(plotFromFile)
+    {
+        updateCalcGrid(0);
+        plotFromFile=false;
+        yahooCollector->getDataModel()->clear();
+    }
+
     QString sec=symbolDesc->getSymbol(selectSecComboBox->currentIndex(),secType);
     QString from=fromDateEdit->date().toString(dateFormat);
     QString to=toDateEdit->date().toString(dateFormat);
-    /*
-    QStringList headers;
-    headers<<"Date";
-    headers<<"Volume"<<"Adj_Close";
-    yahooCollector->setDataHeaders(headers);
-
-    */
 
     emit needData(from,to,sec,dateFormat);
-
 }
 
 void ImportViewDataWindow::createSelectSecComboBox(QGridLayout *layout, QWidget *parent, int row, int column)
@@ -213,14 +217,21 @@ void ImportViewDataWindow::histTableViewChanged(int rowCount)
 
 void ImportViewDataWindow::histPlotButtonClicked()
 {
-    QString format("dd.MM.yyyy");
+    QString plotTitle;
     histDataPlot=new PlotByModel(dateFormat,plotDateFormat,"Price",this);
     histDataPlot->setYscaleRange(20,10);
-    QString plotTitle(selectSecComboBox->currentText());
-    plotTitle.append("  ");
-    plotTitle.append(fromDateEdit->date().toString(format));
-    plotTitle.append("-");
-    plotTitle.append(toDateEdit->date().toString(format));
+    if(!plotFromFile)
+    {
+        QString format("dd.MM.yyyy");
+        plotTitle=selectSecComboBox->currentText();
+        plotTitle.append("  ");
+        plotTitle.append(fromDateEdit->date().toString(format));
+        plotTitle.append("-");
+        plotTitle.append(toDateEdit->date().toString(format));
+    }
+    else
+        plotTitle=getFileNameFromFullPath(fromFileNamePath);
+
     histDataPlot->setWindowTitle(plotTitle);
     histDataPlot->setDataModel(prepareModelForPlot(yahooCollector->getDataModel()));
     histDataPlot->show();
@@ -231,12 +242,19 @@ void ImportViewDataWindow::returnPlotButtonClicked()
 {
     QString format("dd.MM.yyyy");
     PlotByModel *plot=new PlotByModel(dateFormat,plotDateFormat,"Historical return of asset",this);
-    QString plotTitle(selectSecComboBox->currentText());
-    plotTitle.append("  ");
-    //plotTitle.append("");
-    plotTitle.append(fromDateEdit->date().toString(format));
-    plotTitle.append("-");
-    plotTitle.append(toDateEdit->date().toString(format));
+    QString plotTitle;
+
+    if(!plotFromFile)
+    {
+        QString plotTitle=selectSecComboBox->currentText();
+        plotTitle.append("  ");
+        plotTitle.append(fromDateEdit->date().toString(format));
+        plotTitle.append("-");
+        plotTitle.append(toDateEdit->date().toString(format));
+    }
+    else
+        plotTitle=getFileNameFromFullPath(fromFileNamePath);
+
     plot->setWindowTitle(plotTitle);
     QStringList headers;
     headers<<"Date"<<"Return";
@@ -430,10 +448,27 @@ void ImportViewDataWindow::createCheckBoxesPlotFields(QVBoxLayout *layout)
 void ImportViewDataWindow::updateCalcGrid(int rowCount)
 {
     returnPlotButton->setEnabled(rowCount!=0);
+    if(0==rowCount)
+        finCalculator->getModel()->clear();
     calculatedDataTableView->setModel(finCalculator->getModel());
 }
 
 ImportViewDataWindow::~ImportViewDataWindow()
 {
     delete symbolDesc;
+}
+
+void ImportViewDataWindow::loadFileButtonClicked()
+{
+    fromFileNamePath = QFileDialog::getOpenFileName(this,QString("Open File"));
+    int rows=0;
+    if(!fromFileNamePath.isEmpty()){
+        rows=modelFromCSV(yahooCollector->getDataModel(),QString(fromFileNamePath));
+        plotFromFile=true;
+    }
+
+
+    histTableViewChanged(rows);
+    updateCalcGrid(rows);
+    emit showCalcGridFromCSV(rows);
 }

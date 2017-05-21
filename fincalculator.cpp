@@ -28,7 +28,7 @@ void FinCalculator::recalculate(int rowCount)
         outModel=cutModelChangeDirection(rawModel,QStringList("Date"),directionSetting);
 
         prices=calcPrices();
-        appendValuesToModel(outModel,QString("Price"),prices);
+        appendValuesToModel(outModel,QString("AVG price per day"),prices);
 
         returns=calcReturns();
         appendValuesToModel(outModel,QString("Return"),returns);

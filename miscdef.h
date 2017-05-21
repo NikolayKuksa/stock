@@ -10,6 +10,7 @@
 #include <QDebug>
 #include <QMap>
 #include <QPair>
+#include <QFile>
 
 enum SecurityType{security, index};
 enum ModelDirection{forward,back,oneRow};
@@ -22,6 +23,8 @@ QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, 
 ModelDirection calcDirection(QStandardItemModel *model, QString inDateFormat, int column=0);
 void appendValuesToModel(QStandardItemModel *model, QString header, QVector<double> values);
 double mathE(QVector<double> xi,QVector<double> pi);
+int modelFromCSV(QStandardItemModel *model,QString fileName);
+QString getFileNameFromFullPath(QString path,bool excludeFileExt=true);
 
 #endif // MISCDEF
 

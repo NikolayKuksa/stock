@@ -149,3 +149,75 @@ double mathE(QVector<double> xi, QVector<double> pi)
         res+=xi.at(i)*pi.at(i);
     return res;
 }
+
+int modelFromCSV(QStandardItemModel *model, QString fileName)
+{
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << file.errorString();
+        return 0;
+    }
+    if(model!=Q_NULLPTR)
+        model->clear();
+    QList<QByteArray> wordList;
+
+    int rowCount=0;
+    bool isFirstLine=true;
+    bool isFirstWord;
+    QString word;
+    QByteArray line;
+    QString newVal;
+    QStringList headers;
+    while (!file.atEnd()) {
+        QList<QStandardItem *> newModelRow;
+        line = file.readLine();
+        rowCount++;
+        wordList=line.split(',');
+        isFirstWord=true;
+        while (!wordList.isEmpty()) {
+            word=wordList.first();
+            word = word.simplified();
+            word.replace( " ", "" );
+
+            if(isFirstLine)
+            {
+                headers<<word;
+            }
+            else
+            {
+                if(!isFirstWord)
+                    newVal= numberFormat(word);
+                else
+                    newVal=word; //Date has been read
+                newModelRow<<new QStandardItem(newVal);
+            }
+            //qDebug()<<word;
+            wordList.pop_front();
+            isFirstWord=false;
+        }
+
+        if(isFirstLine)
+        {
+            isFirstLine=false;
+            model->setHorizontalHeaderLabels(headers);
+        }
+        else
+            model->appendRow(newModelRow);
+        //qDebug()<<endl;
+    }
+
+    //qDebug() << wordList;
+
+    return rowCount;
+}
+
+QString getFileNameFromFullPath(QString path, bool excludeFileExt)
+{
+    QString fileName=path.split("/").last();
+    if(excludeFileExt){
+        QStringList tmp=fileName.split(".");
+        tmp.pop_back();
+        fileName=tmp.join(".");
+    }
+    return fileName;
+}

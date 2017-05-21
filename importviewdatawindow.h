@@ -48,6 +48,7 @@ private slots:
     void selectAllPlotFieldsButtonClicked();
     void deselectAllPlotFieldsButtonClicked();
     void returnPlotButtonClicked();
+    void loadFileButtonClicked();
 
 private:
     SecurityType secType;
@@ -63,6 +64,8 @@ private:
     int days;
     int plotFieldsCount;
     bool histGridHasData;
+    bool plotFromFile;
+    QString fromFileNamePath;
 
    //Gui
     QGroupBox *calcPane;
@@ -94,6 +97,7 @@ private:
 
 signals:
     void needData(QString, QString, QString, QString);
+    void showCalcGridFromCSV(int);
 public:
     ImportViewDataWindow(QWidget *parent = 0);
     ~ImportViewDataWindow();
