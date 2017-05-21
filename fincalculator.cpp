@@ -2,7 +2,8 @@
 
 FinCalculator::FinCalculator(QObject *parent) : QObject(parent)
 {
-
+    inDateFormat="yyyy-mm-dd";
+    outModel=Q_NULLPTR;
 }
 
 void FinCalculator::setModel(QStandardItemModel *rawModel)
@@ -25,7 +26,7 @@ void FinCalculator::recalculate(int rowCount)
     else
     {
         //delete outModel; //probably have memory leek
-        outModel=cutModelChangeDirection(rawModel,QStringList("Date"),directionSetting);
+        outModel=cutModelChangeDirection(rawModel,QStringList("Date"),false);
 
         prices=calcPrices();
         appendValuesToModel(outModel,QString("AVG price per day"),prices);
@@ -41,6 +42,11 @@ QVector<double> FinCalculator::calcPrices()
 {
     QVector<double> open=fetchValuesFromModel(rawModel,"Open");
     QVector<double> close=fetchValuesFromModel(rawModel,"Close");
+    /*if(calcDirection(rawModel,inDateFormat)==back)
+    {
+        open=reverse(open);
+        close=reverse(close);
+    }*/
     int n=open.length();
     QVector<double> res(n);
 
@@ -60,5 +66,16 @@ QVector<double> FinCalculator::calcReturns()
         price_i=prices.at(i);
         res[i]=(prices.at(i+1)-price_i)/price_i;
     }
+    res.append(0);
     return res;
+}
+
+QVector<double> FinCalculator::getPrices()
+{
+    return prices;
+}
+
+QVector<double> FinCalculator::getReturns()
+{
+    return returns;
 }

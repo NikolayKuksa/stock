@@ -31,7 +31,7 @@ QString numberFormat(QString number,int accurancy)
     return number;
 }
 
-QStandardItemModel *cutModelChangeDirection(QStandardItemModel *model, QStringList headers, ModelDirection direction)
+QStandardItemModel *cutModelChangeDirection(QStandardItemModel *model, QStringList headers, bool changeDirection)
 {
     QStandardItemModel *resModel=new QStandardItemModel;
     QList<QStandardItem *> newModelColumn;
@@ -45,7 +45,7 @@ QStandardItemModel *cutModelChangeDirection(QStandardItemModel *model, QStringLi
         {
             while(ix.isValid())
             {
-                if(direction==forward)
+                if(changeDirection)
                     newModelColumn.push_front(model->itemFromIndex(ix)->clone());
                 else
                     newModelColumn.push_back(model->itemFromIndex(ix)->clone());
@@ -98,7 +98,7 @@ QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, 
     QVector<double> data;
     double value;
     QString curHeader;
-    ModelDirection curModelDirection;
+    ModelDirection curModelDirection;//=calcDirection(model,QString("yyyy-mm-dd"));
     int i=0,j=0;
     QModelIndex ix=model->index(i,j);
     while(ix.isValid())
@@ -171,7 +171,8 @@ int modelFromCSV(QStandardItemModel *model, QString fileName)
     while (!file.atEnd()) {
         QList<QStandardItem *> newModelRow;
         line = file.readLine();
-        rowCount++;
+        if(!isFirstLine)
+            rowCount++;
         wordList=line.split(',');
         isFirstWord=true;
         while (!wordList.isEmpty()) {
@@ -220,4 +221,13 @@ QString getFileNameFromFullPath(QString path, bool excludeFileExt)
         fileName=tmp.join(".");
     }
     return fileName;
+}
+
+QVector<double> reverse(QVector<double> vec)
+{
+    int n=vec.length();
+    QVector<double> rv(n);
+    for(int i=0;i<n;i++)
+        rv[n-(i+1)]=vec.at(i);
+    return rv;
 }

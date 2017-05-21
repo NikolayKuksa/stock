@@ -1,8 +1,12 @@
 #include "mainwindow.h"
 #include "importviewdatawindow.h"
+#include "recalgwindow.h"
+#include "portfoliooptimisationwindow.h"
+
 #include <QApplication>
 #include <QDebug>
 #include <QFileDialog>
+
 
 #include "recalgcalc.h"
 
@@ -10,11 +14,11 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    //QString fileName = QFileDialog::getOpenFileName(Q_NULLPTR,QString("Open File"));
-    MainWindow w;
+    PortfolioOptimisationWindow w;
     w.show();
 
     return a.exec();
+
     /*
     Q_ASSERT(cond), where cond is a boolean expression, writes the warning "ASSERT: 'cond' in file xyz.cpp, line 234" and exits if cond is false.
     Q_ASSERT_X(cond, where, what), where cond is a boolean expression, where a location, and what a message, writes the warning: "ASSERT failure in where: 'what', file xyz.cpp, line 234" and exits if cond is false.
@@ -38,7 +42,5 @@ int main(int argc, char *argv[])
     qDebug()<<1-rc.calcPa(100,20);
    */
 
-  //qDebug()<<fileName;
-//return modelFromCSV(NULL,QString("Apple Inc. 31.03.2017-09.05.2017.csv"));
 
 }

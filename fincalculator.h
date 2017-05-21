@@ -6,7 +6,7 @@
 #include <QString>
 #include <QStandardItemModel>
 #include <QVector>
-
+#include <miscdef.h>
 
 #include "miscdef.h"
 
@@ -18,16 +18,21 @@ public:
 
     void setModel(QStandardItemModel *inModel);
     QStandardItemModel *getModel();
+    QVector<double> getPrices();
+    QVector<double> getReturns();
+
 private:
     QStandardItemModel *rawModel;
     QStandardItemModel *outModel;
 
+    QString inDateFormat;
+
     ModelDirection directionSetting;
     QVector<double> prices;
     QVector<double> returns;
-
     QVector<double> calcPrices();
     QVector<double> calcReturns();
+
 
 
 

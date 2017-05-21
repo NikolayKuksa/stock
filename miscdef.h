@@ -11,13 +11,14 @@
 #include <QMap>
 #include <QPair>
 #include <QFile>
+#include <algorithm>
 
 enum SecurityType{security, index};
 enum ModelDirection{forward,back,oneRow};
 
 double myRound(double arg);
 QString numberFormat(QString number,int accurancy=6);
-QStandardItemModel *cutModelChangeDirection(QStandardItemModel *model, QStringList headers, ModelDirection direction);
+QStandardItemModel *cutModelChangeDirection(QStandardItemModel *model, QStringList headers, bool changeDirection);
 QList<QStandardItem *> doubleVectorToModelColumn(QVector<double> values, ModelDirection direction=forward);
 QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, ModelDirection direction=forward);
 ModelDirection calcDirection(QStandardItemModel *model, QString inDateFormat, int column=0);
@@ -25,6 +26,7 @@ void appendValuesToModel(QStandardItemModel *model, QString header, QVector<doub
 double mathE(QVector<double> xi,QVector<double> pi);
 int modelFromCSV(QStandardItemModel *model,QString fileName);
 QString getFileNameFromFullPath(QString path,bool excludeFileExt=true);
+QVector<double> reverse(QVector<double> vec);
 
 #endif // MISCDEF
 
