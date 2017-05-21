@@ -231,3 +231,20 @@ QVector<double> reverse(QVector<double> vec)
         rv[n-(i+1)]=vec.at(i);
     return rv;
 }
+
+double mathD(QVector<double> xi, QVector<double> pi, double E)
+{
+    double tmp;
+    for(int i=0;i<xi.length();i++)
+    {
+        tmp=xi.at(i)-E;
+        xi[i]=tmp*tmp;
+    }
+    return mathE(xi,pi);
+}
+
+QString PortfolioParam::toString()
+{
+    qDebug()<<"ro="<<ro<<"  E="<<E<<"  D="<<D<<"  Pa="<<Pa<<"  Pb="<<Pb;
+    return QString("");
+}

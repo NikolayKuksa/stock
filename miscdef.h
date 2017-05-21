@@ -27,6 +27,18 @@ double mathE(QVector<double> xi,QVector<double> pi);
 int modelFromCSV(QStandardItemModel *model,QString fileName);
 QString getFileNameFromFullPath(QString path,bool excludeFileExt=true);
 QVector<double> reverse(QVector<double> vec);
+double mathD(QVector<double> xi,QVector<double> pi, double E);
+
+class PortfolioParam
+{
+public:
+    double E;
+    double D;
+    double Pa;
+    double Pb;
+    double ro;
+    QString toString();
+};
 
 #endif // MISCDEF
 

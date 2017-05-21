@@ -3,6 +3,7 @@
 PortfolioOptimisationWindow::PortfolioOptimisationWindow(QWidget *parent) : QMainWindow(parent)
 {
     calculator=new FinCalculator(this);
+    recAlgCalculator=new RecAlgCalc(this);
     inDateFormat="yyyy-mm-dd";
     numberStatesInChain=10;
 
@@ -10,6 +11,16 @@ PortfolioOptimisationWindow::PortfolioOptimisationWindow(QWidget *parent) : QMai
     //dataFile="devtest.txt";
 
     calcPiXi();
+
+    int t=5;//tEdit->value();
+    double a,b;
+    a=150;//aEdit->text().toDouble();
+    b=160;//Edit->text().toDouble();
+    rate=0.1;
+    double roh=0.1;
+
+    QVector<PortfolioParam> portfs= simulate(t,a,b,rate,roh);
+
 }
 
 void PortfolioOptimisationWindow::calcPiXi()
@@ -18,9 +29,10 @@ void PortfolioOptimisationWindow::calcPiXi()
     int fetchedRowsCount=modelFromCSV(rawModel,dataFile);
     calculator->setModel(rawModel);
     calculator->recalculate(fetchedRowsCount);
+
     calcDirection(rawModel,inDateFormat);
     QVector<double> prices=calculator->getPrices();
-    QVector<double> returns=calculator->getReturns();
+    //QVector<double> returns=calculator->getReturns();
 
     /*for(int i=0;i<fetchedRowsCount;i++)
         qDebug()<<"Price: "<<prices.at(i)<<"   Return:"<<returns.at(i);*/
@@ -82,8 +94,48 @@ void PortfolioOptimisationWindow::calcPiXi()
     //qDebug()<<"Xi: "<<uniqueKsi;
     //qDebug()<<"Pi: "<<pi;
 
+    this->ksi=uniqueKsi;
+    this->pi=pi;
+    this->discretePrices=intPrices;
+    this->Xo=prices.last();
+    this->xi.clear();
+    this->xi.push_back(this->ksi);
+
     double sum=0;
     for(int i=0;i<pi.length();i++)
         sum+=pi.at(i);
     qDebug()<<pi.length()<<"  "<<uniqueKsi.length()<<"  "<<sum;
+}
+
+QVector<PortfolioParam> PortfolioOptimisationWindow::simulate(int t,double a,double b,double rate,double roh)
+{
+    double ro=0;
+    QVector<double> roVec;
+    while(ro<=1)
+    {
+        roVec.push_back(ro);
+        ro+=roh;
+    }
+    QVector<double> curKsi(ksi.length());
+    QVector<PortfolioParam> portfolios(roVec.length());
+    double fixValue;
+    for(int i=0;i<roVec.length();i++)
+    {
+        fixValue=rate*roVec.at(i);
+        for(int j=0;j<ksi.length();j++)
+            curKsi[j]=(1-roVec.at(i))*ksi.at(j);
+        xi.clear();
+        xi.push_back(curKsi);
+        recAlgCalculator->setXiPi(xi,pi);
+        recAlgCalculator->setRange(a,b);
+
+        portfolios[i].ro=roVec.at(i);
+        portfolios[i].Pa=recAlgCalculator->calcPa(Xo,t);
+        portfolios[i].Pb=recAlgCalculator->calcPb(Xo,t);
+        portfolios[i].E=mathE(curKsi,pi)+fixValue;
+        portfolios[i].D=mathD(curKsi,pi,portfolios[i].E-fixValue);
+        //portfolios[i].toString();
+    }
+
+    return portfolios;
 }
