@@ -248,3 +248,43 @@ QString PortfolioParam::toString()
     qDebug()<<"ro="<<ro<<"  E="<<E<<"  D="<<D<<"  Pa="<<Pa<<"  Pb="<<Pb;
     return QString("");
 }
+
+bool PortfolioParam::dominateP(PortfolioParam p)
+{
+    if(this->E>=p.E)
+        if(this->D<=p.D)
+                if(this->Pa>=p.Pa)
+                    if(this->Pb>=p.Pb)
+                        return true;
+    return false;
+
+}
+
+bool PortfolioParam::hasDominator(QVector<PortfolioParam> pors)
+{
+    PortfolioParam tmp;
+    tmp.D=this->D;
+    tmp.E=this->E;
+    tmp.Pa=this->Pa;
+    tmp.Pb=this->Pb;
+    for(int i=0;i<pors.length();i++)
+        if(pors[i].dominateP(tmp))
+            return true;
+    return false;
+}
+
+QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors)
+{
+    QVector<PortfolioParam> paretoSet;
+    PortfolioParam curP;
+    while(!pors.isEmpty())
+    {
+        curP=pors.last();
+        pors.pop_back();
+        if(curP.hasDominator(pors) || curP.hasDominator(paretoSet))
+          ;  //do nothing
+        else
+            paretoSet.push_back(curP);
+    }
+    return paretoSet;
+}

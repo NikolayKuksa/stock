@@ -13,6 +13,7 @@ PlotByModel::PlotByModel(QString inDateFormat, QString outDateFormat, QString yA
     plotColors.push_back(QColor(Qt::yellow));
     plotColors.push_back(QColor(Qt::cyan));
 
+    chain=false;
     QScreen *screen = QGuiApplication::primaryScreen();
     QRect  screenGeometry = screen->geometry();
     int height = screenGeometry.height();
@@ -110,18 +111,22 @@ void PlotByModel::makePlot()
     while(ix.isValid())
     {
         customPlot->addGraph();
-        customPlot->graph()->setLineStyle(QCPGraph::lsLine);
+        if(chain)
+            customPlot->graph()->setLineStyle(QCPGraph::lsStepCenter);
+        else
+            customPlot->graph()->setLineStyle(QCPGraph::lsLine);
         customPlot->graph()->setPen(plotColors.at(j-1));
         customPlot->graph()->setName(dataModel->headerData(j,Qt::Horizontal).toString());
         QVector<double> yAxisData(xlen);
         for (int i=0; i<xlen; i++)
         {
-            //double tmp= dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();
-            //qDebug()<<"tmp: "<<tmp<<"  j="<<j;
+            double tmp= dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();
+            qDebug()<<"tmp: "<<tmp<<"  j="<<j;
             yAxisData[i]=dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();;
         }
         customPlot->graph()->setData(xAxisData,yAxisData,true);
         customPlot->graph()->rescaleAxes(true);
+
         tmp=*std::min_element(yAxisData.constBegin(), yAxisData.constEnd());
         Ymin=tmp<Ymin?tmp:Ymin;
         tmp=*std::max_element(yAxisData.constBegin(), yAxisData.constEnd());
@@ -143,7 +148,11 @@ void PlotByModel::makePlot()
 
     // set axis ranges to show all data:
     customPlot->xAxis->setRange(xAxisData.at(0), xAxisData.at(xlen-1));
-    customPlot->yAxis->setRange(Ymin-yScaleMinMinus, Ymax+yScaleMaxPlus);
+    qDebug()<<Ymin<<" "<<Ymax;
+    if(chain)
+        customPlot->yAxis->setRange(Ymin-1, Ymax+1);
+    else
+        customPlot->yAxis->setRange(Ymin-yScaleMinMinus, Ymax+yScaleMaxPlus);
 
     customPlot->legend->setVisible(true);
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
@@ -158,4 +167,9 @@ void PlotByModel::setYscaleRange(int maxPlus, int minMinus)
 {
     this->yScaleMaxPlus=maxPlus;
     this->yScaleMinMinus=minMinus;
+}
+
+void PlotByModel::setChain(bool b)
+{
+    chain=b;
 }

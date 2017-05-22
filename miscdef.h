@@ -37,8 +37,11 @@ public:
     double Pa;
     double Pb;
     double ro;
+    bool dominateP(PortfolioParam p);
+    bool hasDominator(QVector<PortfolioParam> pors);
     QString toString();
 };
 
+QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors);
 #endif // MISCDEF
 

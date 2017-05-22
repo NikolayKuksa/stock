@@ -7,30 +7,95 @@ PortfolioOptimisationWindow::PortfolioOptimisationWindow(QWidget *parent) : QMai
     inDateFormat="yyyy-mm-dd";
     numberStatesInChain=10;
 
-    dataFile="International Business Machines Corporation (IBM)  28.03.2015-06.05.2017.csv";
-    //dataFile="devtest.txt";
+    //dataFile="International Business Machines Corporation (IBM)  28.03.2015-06.05.2017.csv";
+    dataFile="devtest.txt";
 
     calcPiXi();
 
+    QStandardItemModel *chainModel=cutModelChangeDirection(rawModel,QStringList("Date"),false);
+    appendValuesToModel(chainModel,QString("Price/State"),discretePrices);
+    qDebug()<<discretePrices.length();
+
+    QString dateFormat=QString("yyyy-MM-dd");
+    QString plotDateFormat=QString("d. MMMM\nyyyy");
+    PlotByModel *chainPlot=new PlotByModel(dateFormat,plotDateFormat,"Markov Chain",this);
+
+    chainPlot->setDataModel(chainModel);
+    chainPlot->setChain(true);
+    chainPlot->setWindowTitle(QString("Markov chain by real data"));
+    chainPlot->show();
+    chainPlot->makePlot();
+
     int t=5;//tEdit->value();
     double a,b;
-    a=150;//aEdit->text().toDouble();
-    b=160;//Edit->text().toDouble();
-    rate=0.1;
+    a=100;//aEdit->text().toDouble();
+    b=104;//Edit->text().toDouble();
+    rate=0.1;Xo=100;
     double roh=0.1;
 
-    QVector<PortfolioParam> portfs= simulate(t,a,b,rate,roh);
+    /*QVector<PortfolioParam> portfs=simulate(t,a,b,rate,roh);
+    makePlots(portfs);
 
+    QVector<PortfolioParam> paretoSolution=getParetoSet(portfs);
+    qDebug()<<paretoSolution.length();
+    qDebug()<<portfs.length();
+    for(int i=0;i<paretoSolution.length();i++)
+        qDebug()<<paretoSolution.at(i).ro;*/
+
+
+}
+
+void PortfolioOptimisationWindow::makePlots(QVector<PortfolioParam> portfs)
+{
+    int n=portfs.length();
+    QVector<double> pas(n);
+    QVector<double> pbs(n);
+    QVector<double> ros(n);
+    QVector<double> Es(n);
+    QVector<double> Ds(n);
+    for(int i=0;i<n;i++)
+    {
+        pas[i]=portfs.at(i).Pa;
+        pbs[i]=portfs.at(i).Pb;
+        Es[i]=portfs.at(i).E;
+        ros[i]=portfs.at(i).ro;
+        Ds[i]=portfs.at(i).D;
+    }
+    QCustomPlot *PaPbPlot=new QCustomPlot();
+    PaPbPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
+    PaPbPlot->legend->setVisible(true);
+    PaPbPlot->xAxis->setLabel("Part of free risk investments");
+    PaPbPlot->yAxis->setLabel("Probability");
+
+    // add two new graphs and set their look:
+    PaPbPlot->addGraph();
+    PaPbPlot->graph(0)->setPen(QPen(Qt::blue)); // line color blue for first graph
+    PaPbPlot->graph(0)->setName("Pa");
+
+    PaPbPlot->addGraph();
+    PaPbPlot->graph(1)->setName("Pb");
+    PaPbPlot->graph(1)->setPen(QPen(Qt::red));
+
+    PaPbPlot->graph(0)->setData(ros, pas,false);
+    PaPbPlot->graph(1)->setData(ros, pbs,false);
+
+    PaPbPlot->graph(0)->rescaleAxes();
+    PaPbPlot->graph(1)->rescaleAxes(true);
+    PaPbPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+
+    PaPbPlot->resize(300,300);
+    PaPbPlot->setWindowTitle(QString("Probabilities Pa and Pb"));
+    PaPbPlot->show();
 }
 
 void PortfolioOptimisationWindow::calcPiXi()
 {
-    QStandardItemModel *rawModel=new QStandardItemModel;
+    rawModel=new QStandardItemModel;
     int fetchedRowsCount=modelFromCSV(rawModel,dataFile);
     calculator->setModel(rawModel);
     calculator->recalculate(fetchedRowsCount);
 
-    calcDirection(rawModel,inDateFormat);
+    //calcDirection(rawModel,inDateFormat);
     QVector<double> prices=calculator->getPrices();
     //QVector<double> returns=calculator->getReturns();
 
@@ -97,7 +162,7 @@ void PortfolioOptimisationWindow::calcPiXi()
     this->ksi=uniqueKsi;
     this->pi=pi;
     this->discretePrices=intPrices;
-    this->Xo=prices.last();
+    //this->Xo=prices.last();
     this->xi.clear();
     this->xi.push_back(this->ksi);
 
@@ -109,7 +174,7 @@ void PortfolioOptimisationWindow::calcPiXi()
 
 QVector<PortfolioParam> PortfolioOptimisationWindow::simulate(int t,double a,double b,double rate,double roh)
 {
-    double ro=0;
+    double ro=0,x0;
     QVector<double> roVec;
     while(ro<=1)
     {
@@ -118,23 +183,24 @@ QVector<PortfolioParam> PortfolioOptimisationWindow::simulate(int t,double a,dou
     }
     QVector<double> curKsi(ksi.length());
     QVector<PortfolioParam> portfolios(roVec.length());
-    double fixValue;
+    double fixReturn;
     for(int i=0;i<roVec.length();i++)
     {
-        fixValue=rate*roVec.at(i);
+        fixReturn=rate*roVec.at(i);
         for(int j=0;j<ksi.length();j++)
             curKsi[j]=(1-roVec.at(i))*ksi.at(j);
         xi.clear();
         xi.push_back(curKsi);
         recAlgCalculator->setXiPi(xi,pi);
-        recAlgCalculator->setRange(a,b);
+        recAlgCalculator->setRange(a-roVec.at(i)*Xo,b-roVec.at(i)*Xo);
 
+        x0=Xo*(1-roVec.at(i));
         portfolios[i].ro=roVec.at(i);
-        portfolios[i].Pa=recAlgCalculator->calcPa(Xo,t);
-        portfolios[i].Pb=recAlgCalculator->calcPb(Xo,t);
-        portfolios[i].E=mathE(curKsi,pi)+fixValue;
-        portfolios[i].D=mathD(curKsi,pi,portfolios[i].E-fixValue);
-        //portfolios[i].toString();
+        portfolios[i].Pa=recAlgCalculator->calcPa(x0,t);
+        portfolios[i].Pb=recAlgCalculator->calcPb(x0,t);
+        portfolios[i].E=mathE(curKsi,pi)+fixReturn;
+        portfolios[i].D=mathD(curKsi,pi,portfolios[i].E-fixReturn);
+        portfolios[i].toString();
     }
 
     return portfolios;
