@@ -29,7 +29,7 @@ public:
     void setDataModel(QStandardItemModel *model);
     void makePlot();
     void setYscaleRange(int maxPlus,int minMinus);
-    void setChain(bool);
+    void setChain(bool b);
 
     ~PlotByModel();
 };

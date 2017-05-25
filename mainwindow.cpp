@@ -17,9 +17,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     mainLayout->addWidget(recAlgButton);
     connect(recAlgButton,SIGNAL(clicked()),this,SLOT(recAlgButtonClicked()));
 
-    QPushButton *portOptimisationButton=new QPushButton(tr("Portfolio Optimisation"));
-    mainLayout->addWidget(portOptimisationButton);
-    connect(portOptimisationButton,SIGNAL(clicked()),this,SLOT(portOptimisationButtonClicked()));
+    //QPushButton *portOptimisationButton=new QPushButton(tr("Portfolio Optimisation"));
+    //mainLayout->addWidget(portOptimisationButton);
+    //connect(portOptimisationButton,SIGNAL(clicked()),this,SLOT(portOptimisationButtonClicked()));
 
 
 }
@@ -38,7 +38,7 @@ void MainWindow::recAlgButtonClicked()
 
 void MainWindow::portOptimisationButtonClicked()
 {
-    //PortfolioOptimisationWindow *w=new PortfolioOptimisationWindow(this);
-    //w->show();
+    PortfolioOptimisationWindow *w=new PortfolioOptimisationWindow(this);
+    w->show();
     //assert(0);
 }

@@ -120,8 +120,8 @@ void PlotByModel::makePlot()
         QVector<double> yAxisData(xlen);
         for (int i=0; i<xlen; i++)
         {
-            double tmp= dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();
-            qDebug()<<"tmp: "<<tmp<<"  j="<<j;
+            //double tmp= dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();
+            //qDebug()<<"tmp: "<<tmp<<"  j="<<j;
             yAxisData[i]=dataModel->item(i,j)->data(Qt::DisplayRole).toDouble();;
         }
         customPlot->graph()->setData(xAxisData,yAxisData,true);

@@ -43,5 +43,7 @@ public:
 };
 
 QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors);
+
+//void plot(QVector<double> x, QVector<QVector<double> > y, QVector<Q)
 #endif // MISCDEF
 

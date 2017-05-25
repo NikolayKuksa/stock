@@ -15,6 +15,8 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     PortfolioOptimisationWindow w;
+    //MainWindow w;
+    //ImportViewDataWindow w;
     w.show();
 
     return a.exec();

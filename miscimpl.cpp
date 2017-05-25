@@ -251,11 +251,28 @@ QString PortfolioParam::toString()
 
 bool PortfolioParam::dominateP(PortfolioParam p)
 {
-    if(this->E>=p.E)
-        if(this->D<=p.D)
-                if(this->Pa>=p.Pa)
-                    if(this->Pb>=p.Pb)
-                        return true;
+    bool flag=false;
+    double ourE=this->E;
+    double ourD=this->D;
+    double ourPa=this->Pa;
+    double ourPb=this->Pb;
+    if(ourE>=p.E)
+    {
+        flag=flag||(ourE>p.E);
+        if(ourD<=p.D)
+        {
+            flag=flag||(ourD<p.D);
+            if(ourPa>=p.Pa)
+            {
+                flag=flag||(ourPa>p.Pa);
+                if(ourPb>=p.Pb)
+                {
+                    flag=flag||(ourPb>p.Pb);
+                    return flag;
+                }
+            }
+        }
+    }
     return false;
 
 }
@@ -279,10 +296,10 @@ QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors)
     PortfolioParam curP;
     while(!pors.isEmpty())
     {
-        curP=pors.last();
-        pors.pop_back();
+        curP=pors.first();
+        pors.pop_front();
         if(curP.hasDominator(pors) || curP.hasDominator(paretoSet))
-          ;  //do nothing
+            ;  //do nothing
         else
             paretoSet.push_back(curP);
     }

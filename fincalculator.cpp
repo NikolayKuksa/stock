@@ -21,11 +21,13 @@ QStandardItemModel* FinCalculator::getModel()
 
 void FinCalculator::recalculate(int rowCount)
 {
-    if(rowCount<=0)
+    if(rowCount<=0){
+        if(outModel!=Q_NULLPTR)
+            delete outModel;
         outModel=new QStandardItemModel;
+    }
     else
     {
-        //delete outModel; //probably have memory leek
         outModel=cutModelChangeDirection(rawModel,QStringList("Date"),false);
 
         prices=calcPrices();
