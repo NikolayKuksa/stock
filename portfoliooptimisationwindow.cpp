@@ -5,7 +5,7 @@ PortfolioOptimisationWindow::PortfolioOptimisationWindow(QWidget *parent) : QMai
     calculator=new FinCalculator(this);
     recAlgCalculator=new RecAlgCalc(this);
     rawModel=Q_NULLPTR;
-    inDateFormat="yyyy-mm-dd";
+    inDateFormat="yyyy-MM-dd";
     fetchedRowsCount=0;
     chainModel=Q_NULLPTR;
     chainPlot=Q_NULLPTR;
@@ -13,6 +13,14 @@ PortfolioOptimisationWindow::PortfolioOptimisationWindow(QWidget *parent) : QMai
     double maxInPrice=9999999;
     dataStatusErr="<font color='red'>No loaded market data</font>";
     dataStatusOk="<font color='green'>Data is loaded</font>";
+    Pa="P_down";
+    Pb="P_up";
+    mathEtxt="Expected return";
+    riskFreeTxt="Risk free share (x)";
+    x_partTxt=" x ";
+    deviationTxt="Semi-Deviation";
+    this->setWindowTitle("BS-portfolio analysis");
+
 
     QLocale loc(QLocale::English, QLocale::UnitedStates);
     loc.setNumberOptions(QLocale::RejectGroupSeparator);
@@ -24,13 +32,13 @@ PortfolioOptimisationWindow::PortfolioOptimisationWindow(QWidget *parent) : QMai
     backgroundWidget->setLayout(backgroundLayout);
     this->setCentralWidget(backgroundWidget);
 
-    QGroupBox *mainPane=new QGroupBox("Data for optimisation",backgroundWidget);
+    QGroupBox *mainPane=new QGroupBox("Optimization parameters",backgroundWidget);
     createMainPaneComponents(mainPane);
 
-    QGroupBox *resultPane=new QGroupBox("Optimal portfolios",backgroundWidget);
+    QGroupBox *resultPane=new QGroupBox("Pareto-efficient boundary (selected by 4 criteria)",backgroundWidget);
     createResultPaneComponents(resultPane);
 
-    QGroupBox *explainPane=new QGroupBox("Explain Calculation",backgroundWidget);
+    QGroupBox *explainPane=new QGroupBox("Explain Calculation (all simulated portfolios)",backgroundWidget);
     createExplainPaneComponents(explainPane);
 
     QSplitter *splitter=new QSplitter(backgroundWidget);
@@ -43,21 +51,24 @@ PortfolioOptimisationWindow::PortfolioOptimisationWindow(QWidget *parent) : QMai
 void PortfolioOptimisationWindow::createMainPaneComponents(QGroupBox *parent)
 {
     QGroupBox *mainPane=parent;
-    QFormLayout *mainLayout=new QFormLayout;
-    mainPane->setLayout(mainLayout);
+    QVBoxLayout *mainLayout=new QVBoxLayout();
+    QFormLayout *mainFormLayout=new QFormLayout;
+    //mainFormLayout->addL
+    mainPane->setLayout(mainFormLayout);
 
     capitalEdit=new QLineEdit(mainPane);
     capitalEdit->setValidator(doubleValidator);
-    mainLayout->addRow("Amount of investment:",capitalEdit);
+    mainFormLayout->addRow("Amount of investment:",capitalEdit);
     capitalEdit->setText("100.00");
 
     tEdit=new QSpinBox(mainPane);
-    mainLayout->addRow("Investment period:",tEdit);
+    mainFormLayout->addRow("Investment period:",tEdit);
     tEdit->setValue(5);
 
-    rateEdit=new QSpinBox(mainPane);
-    mainLayout->addRow("Risk free rate (%):",rateEdit);
-    rateEdit->setValue(7);
+    rateEdit=new QLineEdit(mainPane);
+    mainFormLayout->addRow("Risk free rate (%):",rateEdit);
+    rateEdit->setValidator(doubleValidator);
+    rateEdit->setText("0.5");
 
     /*nEdit=new QSpinBox(mainPane);
     QLabel *lbl=new QLabel(mainPane);
@@ -68,21 +79,40 @@ void PortfolioOptimisationWindow::createMainPaneComponents(QGroupBox *parent)
 
     aEdit=new QLineEdit(mainPane);
     aEdit->setValidator(doubleValidator);
-    mainLayout->addRow("Left boudary (a):",aEdit);
+    mainFormLayout->addRow("Lower bound:",aEdit);
     aEdit->setText("100");
 
     bEdit=new QLineEdit(mainPane);
     bEdit->setValidator(doubleValidator);
-    mainLayout->addRow("Right boudary (b):",bEdit);
-    bEdit->setText("104");
+    mainFormLayout->addRow("Target bound:",bEdit);
+    bEdit->setText("103");
+
+    portfNumEdit=new QSpinBox(mainPane);
+    mainFormLayout->addRow("Number of portfolios:",portfNumEdit);
+    portfNumEdit->setMinimum(11);
+    portfNumEdit->setMaximum(1001);
+    portfNumEdit->setValue(11);
 
     QPushButton *loadDataButton=new QPushButton(tr("Load data"),mainPane);
     fileStatusLabel=new QLabel(dataStatusErr,mainPane);
-    mainLayout->addRow(loadDataButton,fileStatusLabel);
+    mainFormLayout->addRow(loadDataButton,fileStatusLabel);
     connect(loadDataButton,SIGNAL(clicked()),this,SLOT(loadButtonClicked()));
 
+    QGroupBox *criteriaPane=new QGroupBox(tr("Criteria for optimisation"),mainPane);
+    QHBoxLayout *criteriaLayout=new QHBoxLayout();
+    criteriaPane->setLayout(criteriaLayout);
+    ECheckBox=new QCheckBox(mathEtxt,criteriaPane);
+    criteriaLayout->addWidget(ECheckBox);
+    DCheckBox=new QCheckBox(deviationTxt,criteriaPane);
+    criteriaLayout->addWidget(DCheckBox);
+    PaCheckBox=new QCheckBox(Pa,criteriaPane);
+    criteriaLayout->addWidget(PaCheckBox);
+    PbCheckBox=new QCheckBox(Pb,criteriaPane);
+    criteriaLayout->addWidget(PbCheckBox);
+    mainFormLayout->addWidget(criteriaPane);
+
     QPushButton *calcButton=new QPushButton("Calculate",mainPane);
-    mainLayout->addWidget(calcButton);
+    mainFormLayout->addWidget(calcButton);
     connect(calcButton,SIGNAL(clicked()),this,SLOT(calcButtonClicked()));
 
 }
@@ -111,16 +141,16 @@ void PortfolioOptimisationWindow::createExplainPaneComponents(QGroupBox *explain
     explainButtonsLayout->addWidget(markovPlotButton);
     connect(markovPlotButton,SIGNAL(clicked()),this,SLOT(markovPlotButtonClicked()));
 
-    QPushButton *PaPbPlotButton=new QPushButton("Pr_a, Pr_b",explainButtonsPane);
+    QPushButton *PaPbPlotButton=new QPushButton(Pa+QString(", ")+Pb,explainButtonsPane);
     explainButtonsLayout->addWidget(PaPbPlotButton);
     connect(PaPbPlotButton,SIGNAL(clicked()),this,SLOT(PaPbPlotButtonClicked()));
 
 
-    QPushButton *mathEPlotButton=new QPushButton("Expectation",explainButtonsPane);
+    QPushButton *mathEPlotButton=new QPushButton(mathEtxt,explainButtonsPane);
     explainButtonsLayout->addWidget(mathEPlotButton);
     connect(mathEPlotButton,SIGNAL(clicked()),this,SLOT(mathEPlotButtonClicked()));
 
-    QPushButton *mathDPlotButton=new QPushButton("Deviation",explainButtonsPane);
+    QPushButton *mathDPlotButton=new QPushButton(deviationTxt,explainButtonsPane);
     explainButtonsLayout->addWidget(mathDPlotButton);
     connect(mathDPlotButton,SIGNAL(clicked()),this,SLOT(mathDPlotButtonClicked()));
 
@@ -128,7 +158,7 @@ void PortfolioOptimisationWindow::createExplainPaneComponents(QGroupBox *explain
     explainButtonsLayout->addWidget(mathE_DspacePlotButton);
     connect(mathE_DspacePlotButton,SIGNAL(clicked()),this,SLOT(mathE_DspacePlotButtonClicked()));
 
-    QPushButton *mathPa_PbSpacePlotButton=new QPushButton("Pa-Pb space",explainButtonsPane);
+    QPushButton *mathPa_PbSpacePlotButton=new QPushButton(Pa+QString("-")+Pb+QString(" space"),explainButtonsPane);
     explainButtonsLayout->addWidget(mathPa_PbSpacePlotButton);
     connect(mathPa_PbSpacePlotButton,SIGNAL(clicked()),this,SLOT(mathPa_PbSpacePlotButtonClicked()));
 }
@@ -158,10 +188,10 @@ void PortfolioOptimisationWindow::makePaPbPlots(QVector<PortfolioParam> portfs)
     // add two new graphs and set their look:
     PaPbPlot->addGraph();
     PaPbPlot->graph(0)->setPen(QPen(Qt::blue)); // line color blue for first graph
-    PaPbPlot->graph(0)->setName("Pa");
+    PaPbPlot->graph(0)->setName(Pa);
 
     PaPbPlot->addGraph();
-    PaPbPlot->graph(1)->setName("Pb");
+    PaPbPlot->graph(1)->setName(Pb);
     PaPbPlot->graph(1)->setPen(QPen(Qt::red));
 
     PaPbPlot->graph(0)->setData(ros, pas,false);
@@ -279,7 +309,7 @@ QVector<PortfolioParam> PortfolioOptimisationWindow::simulate(int t,double a,dou
         portfolios[i].Pb=recAlgCalculator->calcPb(x0,t);
         double mathEksi=mathE(curKsi,pi);
         portfolios[i].E=(1+mathEksi)*initialInvestment;
-        portfolios[i].D=mathD(curKsi,pi,mathEksi);
+        portfolios[i].D=roundPrec(x0*x0*mathSemiD(curKsi,pi,mathEksi));
         portfolios[i].toString();
     }
     return portfolios;
@@ -294,6 +324,8 @@ void PortfolioOptimisationWindow::loadButtonClicked()
             delete rawModel;
         rawModel=new QStandardItemModel;
         fetchedRowsCount=modelFromCSV(rawModel,dataFile);
+        if(forward==calcDirection(rawModel,inDateFormat))
+            rawModel=reverseRowsOrder(rawModel);
         if(fetchedRowsCount!=0)
             fileStatusLabel->setText(dataStatusOk);
         else
@@ -311,13 +343,18 @@ void PortfolioOptimisationWindow::calcButtonClicked()
         double a,b,rate,totalMoney;
         a=aEdit->text().toDouble();
         b=bEdit->text().toDouble();
-        rate=rateEdit->value()/100.0;
+        rate=rateEdit->text().toDouble()/100.0;
         totalMoney=capitalEdit->text().toDouble();
-        double roh=0.01;
+        double roh=roundPrec(1.0/(portfNumEdit->value()-1.0));//0.01;
 
         portfs=simulate(t,a,b,rate,roh,totalMoney);
 
-        QVector<PortfolioParam> paretoSolution=getParetoSet(portfs);
+        int nn=4;
+        QVector<bool> lx(nn);
+        for(int i;i<nn;i++)
+            lx[i]=true;
+
+        QVector<PortfolioParam> paretoSolution=getParetoSet(portfs,lx);
         qDebug()<<paretoSolution.length();
         qDebug()<<portfs.length();
         QString pareto;
@@ -326,7 +363,7 @@ void PortfolioOptimisationWindow::calcButtonClicked()
 
 
         QStringList headers;
-        headers<<"x-part"<<"Expectation"<<"Deviation"<<"Pr_a"<<"Pr_b";
+        headers<<x_partTxt<<mathEtxt<<deviationTxt<<Pa<<Pb;
 
         portfoliosParamToGrid(allPortfoliosTable,portfs,headers);
         portfoliosParamToGrid(selectedPortfoliosTable,paretoSolution,headers);
@@ -365,19 +402,19 @@ void PortfolioOptimisationWindow::portfoliosParamToGrid(QTableWidget *table, QVe
         table->insertRow(i);
 
         cell=new QTableWidgetItem(QString::number(porfs.at(i).ro));
-        table->setItem(i,headers.indexOf("x-part"),cell);
+        table->setItem(i,headers.indexOf(x_partTxt),cell);
 
         cell=new QTableWidgetItem(QString::number(porfs.at(i).E));
-        table->setItem(i,headers.indexOf("Expectation"),cell);
+        table->setItem(i,headers.indexOf(mathEtxt),cell);
 
         cell=new QTableWidgetItem(QString::number(porfs.at(i).D));
-        table->setItem(i,headers.indexOf("Deviation"),cell);
+        table->setItem(i,headers.indexOf(deviationTxt),cell);
 
         cell=new QTableWidgetItem(QString::number(porfs.at(i).Pa));
-        table->setItem(i,headers.indexOf("Pr_a"),cell);
+        table->setItem(i,headers.indexOf(Pa),cell);
 
         cell=new QTableWidgetItem(QString::number(porfs.at(i).Pb));
-        table->setItem(i,headers.indexOf("Pr_b"),cell);
+        table->setItem(i,headers.indexOf(Pb),cell);
     }
 }
 
@@ -410,8 +447,8 @@ void PortfolioOptimisationWindow::mathEPlotButtonClicked()
     }
     QCustomPlot *mathEPlot=new QCustomPlot();
     mathEPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    mathEPlot->xAxis->setLabel("Part of assets invested in free risk investments");
-    mathEPlot->yAxis->setLabel("Mathematical Expectation");
+    mathEPlot->xAxis->setLabel(riskFreeTxt);
+    mathEPlot->yAxis->setLabel(mathEtxt);
 
     mathEPlot->addGraph();
     mathEPlot->graph()->setPen(QPen(Qt::red));
@@ -420,7 +457,7 @@ void PortfolioOptimisationWindow::mathEPlotButtonClicked()
     mathEPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
     mathEPlot->resize(300,300);
-    mathEPlot->setWindowTitle(QString("Mathematical Expectation of portfolio value"));
+    mathEPlot->setWindowTitle(mathEtxt+QString(" of portfolio value"));
     mathEPlot->show();
 }
 void PortfolioOptimisationWindow::mathDPlotButtonClicked()
@@ -441,8 +478,8 @@ void PortfolioOptimisationWindow::mathDPlotButtonClicked()
     }
     QCustomPlot *mathDPlot=new QCustomPlot();
     mathDPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    mathDPlot->xAxis->setLabel("Part of assets invested in free risk investments");
-    mathDPlot->yAxis->setLabel("Deviation");
+    mathDPlot->xAxis->setLabel(riskFreeTxt);
+    mathDPlot->yAxis->setLabel(deviationTxt);
 
     mathDPlot->addGraph();
     mathDPlot->graph()->setPen(QPen(Qt::red));
@@ -451,7 +488,7 @@ void PortfolioOptimisationWindow::mathDPlotButtonClicked()
     mathDPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
     mathDPlot->resize(300,300);
-    mathDPlot->setWindowTitle(QString("Deviation of portfolio value"));
+    mathDPlot->setWindowTitle(deviationTxt+QString(" of portfolio value"));
     mathDPlot->show();
 }
 
@@ -473,8 +510,8 @@ void PortfolioOptimisationWindow::mathE_DspacePlotButtonClicked()
     }
     QCustomPlot *spaceED=new QCustomPlot();
     spaceED->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    spaceED->xAxis->setLabel("Matematical Expectation");
-    spaceED->yAxis->setLabel("Deviation");
+    spaceED->xAxis->setLabel(mathEtxt);
+    spaceED->yAxis->setLabel(deviationTxt);
 
     spaceED->addGraph();
     spaceED->graph()->setPen(QPen(Qt::red));
@@ -485,7 +522,7 @@ void PortfolioOptimisationWindow::mathE_DspacePlotButtonClicked()
     spaceED->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
     spaceED->resize(300,300);
-    spaceED->setWindowTitle(QString("Simulated portfolios in E-D pace-criteria"));
+    spaceED->setWindowTitle(QString("Simulated portfolios in E-D space-criteria"));
     spaceED->show();
 }
 
@@ -507,8 +544,8 @@ void PortfolioOptimisationWindow::mathPa_PbSpacePlotButtonClicked()
     }
     QCustomPlot *spacePaPb=new QCustomPlot();
     spacePaPb->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    spacePaPb->xAxis->setLabel("Pa");
-    spacePaPb->yAxis->setLabel("Pb");
+    spacePaPb->xAxis->setLabel(Pa);
+    spacePaPb->yAxis->setLabel(Pb);
 
     spacePaPb->addGraph();
     spacePaPb->graph()->setPen(QPen(Qt::red));
@@ -519,6 +556,6 @@ void PortfolioOptimisationWindow::mathPa_PbSpacePlotButtonClicked()
     spacePaPb->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
     spacePaPb->resize(300,300);
-    spacePaPb->setWindowTitle(QString("Simulated portfolios in Pa-Pb space-criteria"));
+    spacePaPb->setWindowTitle(QString("Simulated portfolios in ")+Pa+QString("-")+Pb+QString(" space-criteria"));
     spacePaPb->show();
 }

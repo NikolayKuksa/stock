@@ -12,6 +12,7 @@
 #include <QPair>
 #include <QFile>
 #include <algorithm>
+#include "pointforselection.h"
 
 enum SecurityType{security, index};
 enum ModelDirection{forward,back,oneRow};
@@ -24,10 +25,11 @@ QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, 
 ModelDirection calcDirection(QStandardItemModel *model, QString inDateFormat, int column=0);
 void appendValuesToModel(QStandardItemModel *model, QString header, QVector<double> values);
 double mathE(QVector<double> xi,QVector<double> pi);
-int modelFromCSV(QStandardItemModel *model,QString fileName);
+int modelFromCSV(QStandardItemModel *model,QString fileName,bool reverseRowOrder=false);
 QString getFileNameFromFullPath(QString path,bool excludeFileExt=true);
 QVector<double> reverse(QVector<double> vec);
-double mathD(QVector<double> xi,QVector<double> pi, double E);
+double mathSemiD(QVector<double> xi,QVector<double> pi, double E);
+QStandardItemModel *reverseRowsOrder(QStandardItemModel* model);
 
 class PortfolioParam
 {
@@ -38,12 +40,14 @@ public:
     double Pb;
     double ro;
     bool dominateP(PortfolioParam p);
-    bool hasDominator(QVector<PortfolioParam> pors);
+    bool hasDominator(QVector<PointForSelection> points);
     QString toString();
+    PointForSelection toPointForSelection(QVector<bool> checkedCriteria, int id=0);
 };
 
-QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors);
-
+QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors, QVector<bool> lx);
+double roundPrec(double num,int prec=6);
+void moveData(QStandardItemModel *from, QStandardItemModel *to);
 //void plot(QVector<double> x, QVector<QVector<double> > y, QVector<Q)
 #endif // MISCDEF
 

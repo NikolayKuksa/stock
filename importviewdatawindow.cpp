@@ -17,7 +17,7 @@ ImportViewDataWindow::ImportViewDataWindow(QWidget *parent)
 
     this->resize(QDesktopWidget().availableGeometry(this).size() * 0.7);
     mainLayout=new QBoxLayout(QBoxLayout::LeftToRight);
-    this->setWindowTitle(parent->windowTitle()+QString("Import, View and Export data"));
+    //this->setWindowTitle(parent->windowTitle()+QString("Import, View and Export data"));
 
     symbolDesc = new SecSymbolDescription;
     //==================================================
@@ -463,11 +463,14 @@ void ImportViewDataWindow::loadFileButtonClicked()
     fromFileNamePath = QFileDialog::getOpenFileName(this,QString("Open File"));
     int rows=0;
     if(!fromFileNamePath.isEmpty()){
-        rows=modelFromCSV(yahooCollector->getDataModel(),QString(fromFileNamePath));
+        QStandardItemModel *tmp=new QStandardItemModel;
+        rows=modelFromCSV(tmp,QString(fromFileNamePath));
+        //rows=modelFromCSV(yahooCollector->getDataModel(),QString(fromFileNamePath));
+        if(forward==calcDirection(tmp,dateFormat))
+            tmp=reverseRowsOrder(tmp);
+        moveData(tmp,yahooCollector->getDataModel());
         plotFromFile=true;
     }
-
-
     histTableViewChanged(rows);
     updateCalcGrid(rows);
     emit showCalcGridFromCSV(rows);

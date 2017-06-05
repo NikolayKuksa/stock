@@ -85,8 +85,10 @@ ModelDirection calcDirection(QStandardItemModel *model, QString inDateFormat,int
         return forward;
     QString dateStr1=model->item(0,column)->data(Qt::DisplayRole).toString();
     QString dateStr2=model->item(1,column)->data(Qt::DisplayRole).toString();
-    QDate date1(QDate::fromString(dateStr1,inDateFormat));
-    QDate date2(QDate::fromString(dateStr2,inDateFormat));
+    QDate date1=QDate::fromString(dateStr1,inDateFormat);
+    QDate date2=QDate::fromString(dateStr2,inDateFormat);
+    qDebug()<<date1;
+    qDebug()<<date2;
     if(date1<=date2)
         return forward;
     else
@@ -98,7 +100,9 @@ QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, 
     QVector<double> data;
     double value;
     QString curHeader;
-    ModelDirection curModelDirection;//=calcDirection(model,QString("yyyy-mm-dd"));
+    ModelDirection curModelDirection=back;//=calcDirection(model,QString("yyyy-MM-dd"));
+    qDebug()<<"cur dir "<<curModelDirection;
+    qDebug()<<"cacl dir "<<calcDirection(model,QString("yyyy-MM-dd"));
     int i=0,j=0;
     QModelIndex ix=model->index(i,j);
     while(ix.isValid())
@@ -110,10 +114,10 @@ QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, 
             {
                 value=model->itemFromIndex(ix)->data(Qt::DisplayRole).toString().toDouble();
                 //qDebug()<<"!!!"<<value;
-                if(curModelDirection==direction)
-                    data.push_back(value);
-                else
-                    data.push_front(value);
+                if(curModelDirection==direction)//{
+                    data.push_back(value); //qDebug()<<"push back";}
+                else//{
+                    data.push_front(value); //qDebug()<<"push front";}
                 ix=model->index(++i,j);
             }
             return data;
@@ -150,7 +154,7 @@ double mathE(QVector<double> xi, QVector<double> pi)
     return res;
 }
 
-int modelFromCSV(QStandardItemModel *model, QString fileName)
+int modelFromCSV(QStandardItemModel *model, QString fileName, bool reverseRowOrder)
 {
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -232,12 +236,12 @@ QVector<double> reverse(QVector<double> vec)
     return rv;
 }
 
-double mathD(QVector<double> xi, QVector<double> pi, double E)
+double mathSemiD(QVector<double> xi, QVector<double> pi, double E)
 {
     double tmp;
     for(int i=0;i<xi.length();i++)
     {
-        tmp=xi.at(i)-E;
+        tmp=std::min(0.0,xi.at(i)-E);
         xi[i]=tmp*tmp;
     }
     return mathE(xi,pi);
@@ -249,7 +253,44 @@ QString PortfolioParam::toString()
     return QString("");
 }
 
-bool PortfolioParam::dominateP(PortfolioParam p)
+PointForSelection PortfolioParam::toPointForSelection(QVector<bool> checkedCriteria,int id)
+{
+    int n=checkedCriteria.length();
+    QStringList names;
+    QVector<double> values(n);
+    QVector<bool> maxDirection(n);
+    int i;
+    //order of criteria: E D Pa Pb
+    if(checkedCriteria.at(i=0)){
+        names.insert(i,"mathE");
+        values[i]=this->E;
+        maxDirection[i]=true;
+    }
+    if(checkedCriteria.at(i=1)){
+        names.insert(i,"semi-D");
+        values[i]=this->D;
+        maxDirection[i]=false;
+    }
+    if(checkedCriteria.at(i=2)){
+        names.insert(i,"Pa");
+        values[i]=this->Pa;
+        maxDirection[i]=true;
+    }
+    if(checkedCriteria.at(i=3)){
+        names.insert(i,"mathE");
+        values[i]=this->Pb;
+        maxDirection[i]=true;
+    }
+
+    PointForSelection point(id,names.length());
+    point.setCriteria(values);
+    point.setCriteriaNames(names);
+    point.setMaxDirection(maxDirection);
+
+    return point;
+}
+
+/*bool PortfolioParam::dominateP(PortfolioParam p)
 {
     bool flag=false;
     double ourE=this->E;
@@ -274,10 +315,9 @@ bool PortfolioParam::dominateP(PortfolioParam p)
         }
     }
     return false;
-
 }
 
-bool PortfolioParam::hasDominator(QVector<PortfolioParam> pors)
+/*bool PortfolioParam::hasDominator(QVector<PointForSelection> points)
 {
     PortfolioParam tmp;
     tmp.D=this->D;
@@ -288,20 +328,83 @@ bool PortfolioParam::hasDominator(QVector<PortfolioParam> pors)
         if(pors[i].dominateP(tmp))
             return true;
     return false;
-}
+}*/
 
-QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors)
+QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors,QVector<bool> lx)
 {
-    QVector<PortfolioParam> paretoSet;
-    PortfolioParam curP;
-    while(!pors.isEmpty())
+    int n=pors.length();
+    QVector<PointForSelection> points(n);
+    for(int i=0;i<n;i++)
     {
-        curP=pors.first();
-        pors.pop_front();
-        if(curP.hasDominator(pors) || curP.hasDominator(paretoSet))
+        points[i]=pors[i].toPointForSelection(lx,i);
+    }
+    QVector<PointForSelection> paretoSetPoints;
+    PointForSelection curP;
+    while(!points.isEmpty())
+    {
+        curP=points.first();
+        points.pop_front();
+        if(curP.hasDominator(points) || curP.hasDominator(paretoSetPoints))
             ;  //do nothing
         else
-            paretoSet.push_back(curP);
+            paretoSetPoints.push_back(curP);
     }
-    return paretoSet;
+    n=paretoSetPoints.length();
+    QVector<PortfolioParam> paretoSetPorts(n);
+    for(int i=0;i<n;i++)
+        paretoSetPorts[i]=pors[paretoSetPoints[i].getId()];
+    return paretoSetPorts;
+}
+
+QStandardItemModel *reverseRowsOrder(QStandardItemModel *model)
+{
+    QStandardItemModel *resModel=new QStandardItemModel;
+    QList<QStandardItem *> newModelColumn;
+    int i=0,j=0;
+    QModelIndex ix=model->index(i,j);
+    while(ix.isValid())
+    {
+        while(ix.isValid())
+        {
+            newModelColumn.push_front(model->itemFromIndex(ix)->clone());
+            ix=model->index(++i,j);
+        }
+        resModel->appendColumn(newModelColumn);
+        newModelColumn.clear();
+        //copy headers to reversed model
+        resModel->setHorizontalHeaderItem(j,model->horizontalHeaderItem(j)->clone());
+        ix=model->index(i=0,++j);
+    }
+    return resModel;
+}
+
+double roundPrec(double num, int prec)
+{
+    double mul=1;
+    for(int i=1;i<=prec;i++)
+        mul*=10;
+    num=num*mul;
+    int tmp=static_cast<int>(num);
+    return tmp/mul;
+}
+
+void moveData(QStandardItemModel *from, QStandardItemModel *to)
+{
+    QList<QStandardItem *> newModelColumn;
+    to->clear();
+    int i=0,j=0;
+    QModelIndex ix=from->index(i,j);
+    while(ix.isValid())
+    {
+        while(ix.isValid())
+        {
+            newModelColumn.push_back(from->itemFromIndex(ix)->clone());
+            ix=from->index(++i,j);
+        }
+        to->appendColumn(newModelColumn);
+        newModelColumn.clear();
+        //copy headers to reversed model
+        to->setHorizontalHeaderItem(j,from->horizontalHeaderItem(j)->clone());
+        ix=from->index(i=0,++j);
+    }
 }

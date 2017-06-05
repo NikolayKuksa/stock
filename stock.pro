@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     recalgcalc.cpp \
     importviewdatawindow.cpp \
     mainwindow.cpp \
-    recalgwindow.cpp
+    recalgwindow.cpp \
+    pointforselection.cpp
 
 HEADERS  += \
     secsymboldescription.h \
@@ -37,4 +38,5 @@ HEADERS  += \
     recalgcalc.h \
     importviewdatawindow.h \
     mainwindow.h \
-    recalgwindow.h
+    recalgwindow.h \
+    pointforselection.h

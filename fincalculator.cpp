@@ -44,11 +44,12 @@ QVector<double> FinCalculator::calcPrices()
 {
     QVector<double> open=fetchValuesFromModel(rawModel,"Open");
     QVector<double> close=fetchValuesFromModel(rawModel,"Close");
-    /*if(calcDirection(rawModel,inDateFormat)==back)
-    {
-        open=reverse(open);
-        close=reverse(close);
-    }*/
+    //if(calcDirection(rawModel,inDateFormat)==back)
+    //{
+        //open=reverse(open);
+        //close=reverse(close);
+    //}*/
+    qDebug()<<open;
     int n=open.length();
     QVector<double> res(n);
 

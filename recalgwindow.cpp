@@ -21,7 +21,7 @@ RecAlgWindow::RecAlgWindow(QWidget *parent) : QMainWindow(parent)
     QWidget *mainWidget=new QWidget(this);
     mainWidget->setLayout(mainLayout);
     this->setCentralWidget(mainWidget);
-    this->setWindowTitle(parent->windowTitle());
+    //this->setWindowTitle(parent->windowTitle());
 
     QGroupBox *parametersPane=new QGroupBox(tr("Parameters for calculating"),mainWidget);
     mainLayout->addWidget(parametersPane,1);

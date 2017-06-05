@@ -36,6 +36,7 @@ private:
     void makeMarkovChainPlot();
     void createExplainPaneComponents(QGroupBox *explainPane);
 
+    QString Pa,Pb,mathEtxt,riskFreeTxt,x_partTxt,deviationTxt;
     QVector<double> ksi;
     QVector<QVector<double> > xi;
     QVector<double> pi;
@@ -43,12 +44,20 @@ private:
 
     QSpinBox *tEdit;
     QSpinBox *nEdit;
-    QSpinBox *rateEdit;
-
+    QSpinBox *nPortfsEdit;
+    QSpinBox *portfNumEdit;
+    
+    QLineEdit *rateEdit;
     QLineEdit *capitalEdit;
     QLineEdit *aEdit;
     QLineEdit *bEdit;
     QLineEdit *resEdit;
+
+    QCheckBox *ECheckBox;
+    QCheckBox *DCheckBox;
+    QCheckBox *PaCheckBox;
+    QCheckBox *PbCheckBox;
+
 
     QVector<PortfolioParam> simulate(int t, double a, double b, double rate, double roh, double initialInvestment);
     void calcPiXi(QStandardItemModel *rawModel,int numberStatesInChain);
