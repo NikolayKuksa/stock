@@ -22,7 +22,7 @@ ImportViewDataWindow::ImportViewDataWindow(QWidget *parent)
     symbolDesc = new SecSymbolDescription;
     //==================================================
     calcPane = new QGroupBox(tr("Calculation"));
-    QHBoxLayout *controlLayout = new QHBoxLayout;
+    //QHBoxLayout *controlLayout = new QHBoxLayout;
     //add widgets here
     //calcPane->setLayout(controlLayout);
     //==================================================

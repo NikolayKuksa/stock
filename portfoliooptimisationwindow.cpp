@@ -53,8 +53,8 @@ void PortfolioOptimisationWindow::createMainPaneComponents(QGroupBox *parent)
     QGroupBox *mainPane=parent;
     QVBoxLayout *mainLayout=new QVBoxLayout();
     QFormLayout *mainFormLayout=new QFormLayout;
-    //mainFormLayout->addL
-    mainPane->setLayout(mainFormLayout);
+    mainLayout->addLayout(mainFormLayout);
+    mainPane->setLayout(mainLayout);
 
     capitalEdit=new QLineEdit(mainPane);
     capitalEdit->setValidator(doubleValidator);
@@ -99,7 +99,7 @@ void PortfolioOptimisationWindow::createMainPaneComponents(QGroupBox *parent)
     connect(loadDataButton,SIGNAL(clicked()),this,SLOT(loadButtonClicked()));
 
     QGroupBox *criteriaPane=new QGroupBox(tr("Criteria for optimisation"),mainPane);
-    QHBoxLayout *criteriaLayout=new QHBoxLayout();
+    QVBoxLayout *criteriaLayout=new QVBoxLayout();
     criteriaPane->setLayout(criteriaLayout);
     ECheckBox=new QCheckBox(mathEtxt,criteriaPane);
     criteriaLayout->addWidget(ECheckBox);
@@ -109,10 +109,11 @@ void PortfolioOptimisationWindow::createMainPaneComponents(QGroupBox *parent)
     criteriaLayout->addWidget(PaCheckBox);
     PbCheckBox=new QCheckBox(Pb,criteriaPane);
     criteriaLayout->addWidget(PbCheckBox);
-    mainFormLayout->addWidget(criteriaPane);
+    criteriaPane->setMaximumHeight(150);
+    mainLayout->addWidget(criteriaPane);
 
     QPushButton *calcButton=new QPushButton("Calculate",mainPane);
-    mainFormLayout->addWidget(calcButton);
+    mainLayout->addWidget(calcButton);
     connect(calcButton,SIGNAL(clicked()),this,SLOT(calcButtonClicked()));
 
 }
@@ -154,31 +155,37 @@ void PortfolioOptimisationWindow::createExplainPaneComponents(QGroupBox *explain
     explainButtonsLayout->addWidget(mathDPlotButton);
     connect(mathDPlotButton,SIGNAL(clicked()),this,SLOT(mathDPlotButtonClicked()));
 
+    QPushButton *mathEDPlotButton=new QPushButton(mathEtxt+QString("-")+deviationTxt,explainButtonsPane);
+    explainButtonsLayout->addWidget(mathEDPlotButton);
+    connect(mathEDPlotButton,SIGNAL(clicked()),this,SLOT(mathEmathDPlotButtonClicked()));
+
     QPushButton *mathE_DspacePlotButton=new QPushButton("E-D space",explainButtonsPane);
     explainButtonsLayout->addWidget(mathE_DspacePlotButton);
     connect(mathE_DspacePlotButton,SIGNAL(clicked()),this,SLOT(mathE_DspacePlotButtonClicked()));
 
-    QPushButton *mathPa_PbSpacePlotButton=new QPushButton(Pa+QString("-")+Pb+QString(" space"),explainButtonsPane);
-    explainButtonsLayout->addWidget(mathPa_PbSpacePlotButton);
-    connect(mathPa_PbSpacePlotButton,SIGNAL(clicked()),this,SLOT(mathPa_PbSpacePlotButtonClicked()));
+    QPushButton *Pa_PbSpacePlotButton=new QPushButton(Pa+QString("-")+Pb+QString(" space"),explainButtonsPane);
+    explainButtonsLayout->addWidget(Pa_PbSpacePlotButton);
+    connect(Pa_PbSpacePlotButton,SIGNAL(clicked()),this,SLOT(Pa_PbSpacePlotButtonClicked()));
+
+    QPushButton *mathE_PaSpacePlotButton=new QPushButton(mathEtxt+QString("-")+Pa+QString(" space"),explainButtonsPane);
+    explainButtonsLayout->addWidget(mathE_PaSpacePlotButton);
+    connect(mathE_PaSpacePlotButton,SIGNAL(clicked()),this,SLOT(mathE_PaSpacePlotButtonClicked()));
+
+    QPushButton *mathE_PbSpacePlotButton=new QPushButton(mathEtxt+QString("-")+Pb+QString(" space"),explainButtonsPane);
+    explainButtonsLayout->addWidget(mathE_PbSpacePlotButton);
+    connect(mathE_PbSpacePlotButton,SIGNAL(clicked()),this,SLOT(mathE_PbSpacePlotButtonClicked()));
+
+    QPushButton *mathD_PaSpacePlotButton=new QPushButton(deviationTxt+QString("-")+Pa+QString(" space"),explainButtonsPane);
+    explainButtonsLayout->addWidget(mathD_PaSpacePlotButton);
+    connect(mathD_PaSpacePlotButton,SIGNAL(clicked()),this,SLOT(mathD_PaSpacePlotButtonClicked()));
+
+    QPushButton *mathD_PbSpacePlotButton=new QPushButton(deviationTxt+QString("-")+Pb+QString(" space"),explainButtonsPane);
+    explainButtonsLayout->addWidget(mathD_PbSpacePlotButton);
+    connect(mathD_PbSpacePlotButton,SIGNAL(clicked()),this,SLOT(mathD_PbSpacePlotButtonClicked()));
 }
 
-void PortfolioOptimisationWindow::makePaPbPlots(QVector<PortfolioParam> portfs)
+void PortfolioOptimisationWindow::makePaPbPlots()
 {
-    int n=portfs.length();
-    QVector<double> pas(n);
-    QVector<double> pbs(n);
-    QVector<double> ros(n);
-    QVector<double> Es(n);
-    QVector<double> Ds(n);
-    for(int i=0;i<n;i++)
-    {
-        pas[i]=portfs.at(i).Pa;
-        pbs[i]=portfs.at(i).Pb;
-        Es[i]=portfs.at(i).E;
-        ros[i]=portfs.at(i).ro;
-        Ds[i]=portfs.at(i).D;
-    }
     QCustomPlot *PaPbPlot=new QCustomPlot();
     PaPbPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
     PaPbPlot->legend->setVisible(true);
@@ -194,16 +201,21 @@ void PortfolioOptimisationWindow::makePaPbPlots(QVector<PortfolioParam> portfs)
     PaPbPlot->graph(1)->setName(Pb);
     PaPbPlot->graph(1)->setPen(QPen(Qt::red));
 
-    PaPbPlot->graph(0)->setData(ros, pas,false);
-    PaPbPlot->graph(1)->setData(ros, pbs,false);
+    PaPbPlot->graph(0)->setData(plotRos, plotPas,false);
+    PaPbPlot->graph(1)->setData(plotRos, plotPbs,false);
 
     PaPbPlot->graph(0)->rescaleAxes();
     PaPbPlot->graph(1)->rescaleAxes(true);
     PaPbPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
+    Qt::WindowFlags flags = PaPbPlot->windowFlags();
+    PaPbPlot->setWindowFlags(flags | Qt::WindowStaysOnTopHint);
+
     PaPbPlot->resize(300,300);
     PaPbPlot->setWindowTitle(QString("Probabilities Pa and Pb"));
     PaPbPlot->show();
+
+
 }
 
 void PortfolioOptimisationWindow::calcPiXi(QStandardItemModel *rawModel,int numberStatesInChain)
@@ -279,7 +291,7 @@ void PortfolioOptimisationWindow::calcPiXi(QStandardItemModel *rawModel,int numb
     double sum=0;
     for(int i=0;i<pi.length();i++)
         sum+=pi.at(i);
-    qDebug()<<pi.length()<<"  "<<uniqueKsi.length()<<"  "<<sum;
+    //qDebug()<<pi.length()<<"  "<<uniqueKsi.length()<<"  "<<sum;
 }
 
 QVector<PortfolioParam> PortfolioOptimisationWindow::simulate(int t,double a,double b,double rate,double roh,double initialInvestment)
@@ -349,25 +361,52 @@ void PortfolioOptimisationWindow::calcButtonClicked()
 
         portfs=simulate(t,a,b,rate,roh,totalMoney);
 
+        int n=portfs.length();
+        plotPas=QVector<double>(n);
+        plotPbs=QVector<double>(n) ;
+        plotRos=QVector<double>(n);
+        plotEs=QVector<double>(n) ;
+        plotDs=QVector<double>(n);
+
+        for(int i=0;i<n;i++)
+        {
+            plotPas[i]=portfs.at(i).Pa;
+            plotPbs[i]=portfs.at(i).Pb;
+            plotEs[i]=portfs.at(i).E;
+            plotRos[i]=portfs.at(i).ro;
+            plotDs[i]=portfs.at(i).D;
+        }
+
         int nn=4;
         QVector<bool> lx(nn);
-        for(int i;i<nn;i++)
-            lx[i]=true;
 
-        QVector<PortfolioParam> paretoSolution=getParetoSet(portfs,lx);
-        qDebug()<<paretoSolution.length();
-        qDebug()<<portfs.length();
-        QString pareto;
-        for(int i=0;i<paretoSolution.length();i++)
-            pareto.append(QString::number(paretoSolution.at(i).ro)).append("  ");
-
+        lx[0]=ECheckBox->isChecked();
+        lx[1]=DCheckBox->isChecked();
+        lx[2]=PaCheckBox->isChecked();
+        lx[3]=PbCheckBox->isChecked();
+        bool calcFlag=false;
+        //qDebug()<<lx;
+        for(int i=0;i<nn;i++)
+            if(lx.at(i))
+            {
+                calcFlag=true;
+                break;
+            }
 
         QStringList headers;
         headers<<x_partTxt<<mathEtxt<<deviationTxt<<Pa<<Pb;
 
+        if(calcFlag)
+        {
+            QVector<PortfolioParam> paretoSolution=getParetoSet(portfs,lx);
+            //qDebug()<<paretoSolution.length();
+            //qDebug()<<portfs.length();
+            QString pareto;
+            for(int i=0;i<paretoSolution.length();i++)
+                pareto.append(QString::number(paretoSolution.at(i).ro)).append("  ");
+            portfoliosParamToGrid(selectedPortfoliosTable,paretoSolution,headers);
+        }
         portfoliosParamToGrid(allPortfoliosTable,portfs,headers);
-        portfoliosParamToGrid(selectedPortfoliosTable,paretoSolution,headers);
-
     }
 }
 
@@ -384,6 +423,8 @@ void PortfolioOptimisationWindow::makeMarkovChainPlot()
     chainPlot=new PlotByModel(dateFormat,plotDateFormat,"Markov Chain",this);
     chainPlot->setDataModel(chainModel);
     chainPlot->setChain(true);
+    Qt::WindowFlags flags = chainPlot->windowFlags();
+    chainPlot->setWindowFlags(flags | Qt::WindowStaysOnTopHint);
     chainPlot->setWindowTitle(QString("Markov chain by real data"));
     chainPlot->show();
     chainPlot->makePlot();
@@ -426,136 +467,113 @@ void PortfolioOptimisationWindow::markovPlotButtonClicked()
 
 void PortfolioOptimisationWindow::PaPbPlotButtonClicked()
 {
-    makePaPbPlots(portfs);
+    makePaPbPlots();
 }
 
 void PortfolioOptimisationWindow::mathEPlotButtonClicked()
 {
-    int n=portfs.length();
-    QVector<double> pas(n);
-    QVector<double> pbs(n);
-    QVector<double> ros(n);
-    QVector<double> Es(n);
-    QVector<double> Ds(n);
-    for(int i=0;i<n;i++)
-    {
-        pas[i]=portfs.at(i).Pa;
-        pbs[i]=portfs.at(i).Pb;
-        Es[i]=portfs.at(i).E;
-        ros[i]=portfs.at(i).ro;
-        Ds[i]=portfs.at(i).D;
-    }
-    QCustomPlot *mathEPlot=new QCustomPlot();
-    mathEPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    mathEPlot->xAxis->setLabel(riskFreeTxt);
-    mathEPlot->yAxis->setLabel(mathEtxt);
-
-    mathEPlot->addGraph();
-    mathEPlot->graph()->setPen(QPen(Qt::red));
-    mathEPlot->graph()->setData(ros, Es,false);
-    mathEPlot->graph()->rescaleAxes();
-    mathEPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
-
-    mathEPlot->resize(300,300);
-    mathEPlot->setWindowTitle(mathEtxt+QString(" of portfolio value"));
-    mathEPlot->show();
+    QString title(mathEtxt+QString(" of portfolio value"));
+    makeParetoSpacePlot(plotRos,plotEs,riskFreeTxt,mathEtxt,title,"line");
 }
 void PortfolioOptimisationWindow::mathDPlotButtonClicked()
 {
-    int n=portfs.length();
-    QVector<double> pas(n);
-    QVector<double> pbs(n);
-    QVector<double> ros(n);
-    QVector<double> Es(n);
-    QVector<double> Ds(n);
-    for(int i=0;i<n;i++)
-    {
-        pas[i]=portfs.at(i).Pa;
-        pbs[i]=portfs.at(i).Pb;
-        Es[i]=portfs.at(i).E;
-        ros[i]=portfs.at(i).ro;
-        Ds[i]=portfs.at(i).D;
-    }
-    QCustomPlot *mathDPlot=new QCustomPlot();
-    mathDPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    mathDPlot->xAxis->setLabel(riskFreeTxt);
-    mathDPlot->yAxis->setLabel(deviationTxt);
+    QString title(deviationTxt+QString(" of portfolio value"));
+    makeParetoSpacePlot(plotRos,plotDs,riskFreeTxt,deviationTxt,title,"line");
+}
 
-    mathDPlot->addGraph();
-    mathDPlot->graph()->setPen(QPen(Qt::red));
-    mathDPlot->graph()->setData(ros, Ds,false);
-    mathDPlot->graph()->rescaleAxes();
-    mathDPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+void PortfolioOptimisationWindow::mathEmathDPlotButtonClicked()
+{
+    QCustomPlot *EDPlot=new QCustomPlot();
+    EDPlot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
+    EDPlot->legend->setVisible(true);
+    EDPlot->xAxis->setLabel("Part of free risk investments");
+    EDPlot->yAxis->setLabel("Return/Risk");
 
-    mathDPlot->resize(300,300);
-    mathDPlot->setWindowTitle(deviationTxt+QString(" of portfolio value"));
-    mathDPlot->show();
+    // add two new graphs and set their look:
+    EDPlot->addGraph();
+    EDPlot->graph(0)->setPen(QPen(Qt::blue)); // line color blue for first graph
+    EDPlot->graph(0)->setName(mathEtxt);
+
+    EDPlot->addGraph();
+    EDPlot->graph(1)->setName(deviationTxt);
+    EDPlot->graph(1)->setPen(QPen(Qt::red));
+
+    EDPlot->graph(0)->setData(plotRos, plotEs,false);
+    EDPlot->graph(1)->setData(plotRos, plotDs,false);
+
+    EDPlot->graph(0)->rescaleAxes();
+    EDPlot->graph(1)->rescaleAxes(true);
+    EDPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+
+    Qt::WindowFlags flags = EDPlot->windowFlags();
+    EDPlot->setWindowFlags(flags | Qt::WindowStaysOnTopHint);
+
+    EDPlot->resize(300,300);
+    EDPlot->setWindowTitle(QString("Expected return and Semi-Deviation (risk)"));
+    EDPlot->show();
+
 }
 
 void PortfolioOptimisationWindow::mathE_DspacePlotButtonClicked()
 {
-    int n=portfs.length();
-    QVector<double> pas(n);
-    QVector<double> pbs(n);
-    QVector<double> ros(n);
-    QVector<double> Es(n);
-    QVector<double> Ds(n);
-    for(int i=0;i<n;i++)
-    {
-        pas[i]=portfs.at(i).Pa;
-        pbs[i]=portfs.at(i).Pb;
-        Es[i]=portfs.at(i).E;
-        ros[i]=portfs.at(i).ro;
-        Ds[i]=portfs.at(i).D;
-    }
-    QCustomPlot *spaceED=new QCustomPlot();
-    spaceED->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    spaceED->xAxis->setLabel(mathEtxt);
-    spaceED->yAxis->setLabel(deviationTxt);
-
-    spaceED->addGraph();
-    spaceED->graph()->setPen(QPen(Qt::red));
-    spaceED->graph()->setLineStyle(QCPGraph::lsNone);
-    spaceED->graph()->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 2));
-    spaceED->graph()->setData(Es, Ds,false);
-    spaceED->graph()->rescaleAxes();
-    spaceED->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
-
-    spaceED->resize(300,300);
-    spaceED->setWindowTitle(QString("Simulated portfolios in E-D space-criteria"));
-    spaceED->show();
+    QString title(QString("Simulated portfolios in E-D space-criteria"));
+    makeParetoSpacePlot(plotEs,plotDs,mathEtxt,deviationTxt,title);
 }
 
-void PortfolioOptimisationWindow::mathPa_PbSpacePlotButtonClicked()
+void PortfolioOptimisationWindow::Pa_PbSpacePlotButtonClicked()
 {
-    int n=portfs.length();
-    QVector<double> pas(n);
-    QVector<double> pbs(n);
-    QVector<double> ros(n);
-    QVector<double> Es(n);
-    QVector<double> Ds(n);
-    for(int i=0;i<n;i++)
-    {
-        pas[i]=portfs.at(i).Pa;
-        pbs[i]=portfs.at(i).Pb;
-        Es[i]=portfs.at(i).E;
-        ros[i]=portfs.at(i).ro;
-        Ds[i]=portfs.at(i).D;
-    }
+    QString title(QString("Simulated portfolios in ")+Pa+QString("-")+Pb+QString(" space-criteria"));
+    makeParetoSpacePlot(plotPas,plotPbs,Pa,Pb,title);
+}
+
+void PortfolioOptimisationWindow::mathE_PaSpacePlotButtonClicked()
+{
+    QString title(QString("Simulated portfolios in ")+mathEtxt+QString("-")+Pa+QString(" space-criteria"));
+    makeParetoSpacePlot(plotEs,plotPas,mathEtxt,Pa,title);
+}
+
+void PortfolioOptimisationWindow::mathE_PbSpacePlotButtonClicked()
+{
+    QString title(QString("Simulated portfolios in ")+mathEtxt+QString("-")+Pb+QString(" space-criteria"));
+    makeParetoSpacePlot(plotEs,plotPbs,mathEtxt,Pb,title);
+}
+
+void PortfolioOptimisationWindow::mathD_PaSpacePlotButtonClicked()
+{
+    QString title(QString("Simulated portfolios in ")+deviationTxt+QString("-")+Pa+QString(" space-criteria"));
+    makeParetoSpacePlot(plotDs,plotPas,deviationTxt,Pa,title);
+}
+
+void PortfolioOptimisationWindow::mathD_PbSpacePlotButtonClicked()
+{
+    QString title(QString("Simulated portfolios in ")+deviationTxt+QString("-")+Pb+QString(" space-criteria"));
+    makeParetoSpacePlot(plotDs,plotPbs,deviationTxt,Pb,title);
+}
+
+void PortfolioOptimisationWindow::makeParetoSpacePlot(QVector<double> x,QVector<double> y, QString xName,QString yName,QString title,QString lineType)
+{
     QCustomPlot *spacePaPb=new QCustomPlot();
     spacePaPb->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    spacePaPb->xAxis->setLabel(Pa);
-    spacePaPb->yAxis->setLabel(Pb);
+    spacePaPb->xAxis->setLabel(xName);
+    spacePaPb->yAxis->setLabel(yName);
 
     spacePaPb->addGraph();
     spacePaPb->graph()->setPen(QPen(Qt::red));
-    spacePaPb->graph()->setLineStyle(QCPGraph::lsNone);
-    spacePaPb->graph()->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 2));
-    spacePaPb->graph()->setData(pas, pbs,false);
+    //dot line type is default, when lineType isn't specified
+    if(lineType=="dot")
+    {
+        spacePaPb->graph()->setLineStyle(QCPGraph::lsNone);
+        spacePaPb->graph()->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 2));
+    }
+    spacePaPb->graph()->setData(x, y,false);
     spacePaPb->graph()->rescaleAxes();
     spacePaPb->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 
+    Qt::WindowFlags flags = spacePaPb->windowFlags();
+    spacePaPb->setWindowFlags(flags | Qt::WindowStaysOnTopHint);
     spacePaPb->resize(300,300);
-    spacePaPb->setWindowTitle(QString("Simulated portfolios in ")+Pa+QString("-")+Pb+QString(" space-criteria"));
+    spacePaPb->setWindowTitle(title);
     spacePaPb->show();
+
+
 }

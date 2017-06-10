@@ -48,6 +48,8 @@ public:
 QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors, QVector<bool> lx);
 double roundPrec(double num,int prec=6);
 void moveData(QStandardItemModel *from, QStandardItemModel *to);
+bool hasDominatorInVector(PointForSelection point, QVector<PointForSelection> points);
+
 //void plot(QVector<double> x, QVector<QVector<double> > y, QVector<Q)
 #endif // MISCDEF
 

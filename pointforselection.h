@@ -4,6 +4,7 @@
 #include <QVector>
 #include <QString>
 #include <QStringList>
+#include <QDebug>
 
 class PointForSelection
 {
@@ -20,9 +21,6 @@ public:
     void setCriteria(QVector<double> values);
     void setCriteriaNames(QStringList names);
     void setMaxDirection(QVector<bool> maxDirecton);
-
-    bool hasDominator(QVector<PointForSelection> points) const;
-
 private:
     int n;
     int id;

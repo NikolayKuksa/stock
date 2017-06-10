@@ -35,6 +35,8 @@ private:
     void portfoliosParamToGrid(QTableWidget *table, QVector<PortfolioParam> porfs, QStringList headers);
     void makeMarkovChainPlot();
     void createExplainPaneComponents(QGroupBox *explainPane);
+    void makeParetoSpacePlot(QVector<double> x, QVector<double> y, QString xName, QString yName, QString title, QString lineType=QString("dot"));
+    void makePaPbPlots();
 
     QString Pa,Pb,mathEtxt,riskFreeTxt,x_partTxt,deviationTxt;
     QVector<double> ksi;
@@ -61,8 +63,13 @@ private:
 
     QVector<PortfolioParam> simulate(int t, double a, double b, double rate, double roh, double initialInvestment);
     void calcPiXi(QStandardItemModel *rawModel,int numberStatesInChain);
-    void makePaPbPlots(QVector<PortfolioParam> portfs);
     QVector<PortfolioParam> portfs;
+
+    QVector<double> plotPas;
+    QVector<double> plotPbs;
+    QVector<double> plotRos;
+    QVector<double> plotEs;
+    QVector<double> plotDs;
 
 private slots:
     void calcButtonClicked();
@@ -72,7 +79,13 @@ private slots:
     void mathEPlotButtonClicked();
     void mathDPlotButtonClicked();
     void mathE_DspacePlotButtonClicked();
-    void mathPa_PbSpacePlotButtonClicked();
+    void Pa_PbSpacePlotButtonClicked();
+    void mathE_PaSpacePlotButtonClicked();
+    void mathE_PbSpacePlotButtonClicked();
+    void mathD_PaSpacePlotButtonClicked();
+    void mathD_PbSpacePlotButtonClicked();
+    void mathEmathDPlotButtonClicked();
+
 
 public:
     explicit PortfolioOptimisationWindow(QWidget *parent = 0);

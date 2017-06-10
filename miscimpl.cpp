@@ -87,8 +87,8 @@ ModelDirection calcDirection(QStandardItemModel *model, QString inDateFormat,int
     QString dateStr2=model->item(1,column)->data(Qt::DisplayRole).toString();
     QDate date1=QDate::fromString(dateStr1,inDateFormat);
     QDate date2=QDate::fromString(dateStr2,inDateFormat);
-    qDebug()<<date1;
-    qDebug()<<date2;
+    //qDebug()<<date1;
+    //qDebug()<<date2;
     if(date1<=date2)
         return forward;
     else
@@ -101,8 +101,8 @@ QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, 
     double value;
     QString curHeader;
     ModelDirection curModelDirection=back;//=calcDirection(model,QString("yyyy-MM-dd"));
-    qDebug()<<"cur dir "<<curModelDirection;
-    qDebug()<<"cacl dir "<<calcDirection(model,QString("yyyy-MM-dd"));
+    //qDebug()<<"cur dir "<<curModelDirection;
+    //qDebug()<<"cacl dir "<<calcDirection(model,QString("yyyy-MM-dd"));
     int i=0,j=0;
     QModelIndex ix=model->index(i,j);
     while(ix.isValid())
@@ -115,9 +115,9 @@ QVector<double> fetchValuesFromModel(QStandardItemModel *model, QString header, 
                 value=model->itemFromIndex(ix)->data(Qt::DisplayRole).toString().toDouble();
                 //qDebug()<<"!!!"<<value;
                 if(curModelDirection==direction)//{
-                    data.push_back(value); //qDebug()<<"push back";}
+                    data.push_back(value); ////qDebug()<<"push back";}
                 else//{
-                    data.push_front(value); //qDebug()<<"push front";}
+                    data.push_front(value); ////qDebug()<<"push front";}
                 ix=model->index(++i,j);
             }
             return data;
@@ -158,7 +158,7 @@ int modelFromCSV(QStandardItemModel *model, QString fileName, bool reverseRowOrd
 {
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << file.errorString();
+        //qDebug() << file.errorString();
         return 0;
     }
     if(model!=Q_NULLPTR)
@@ -208,10 +208,10 @@ int modelFromCSV(QStandardItemModel *model, QString fileName, bool reverseRowOrd
         }
         else
             model->appendRow(newModelRow);
-        //qDebug()<<endl;
+        ////qDebug()<<endl;
     }
 
-    //qDebug() << wordList;
+    ////qDebug() << wordList;
 
     return rowCount;
 }
@@ -249,39 +249,33 @@ double mathSemiD(QVector<double> xi, QVector<double> pi, double E)
 
 QString PortfolioParam::toString()
 {
-    qDebug()<<"ro="<<ro<<"  E="<<E<<"  D="<<D<<"  Pa="<<Pa<<"  Pb="<<Pb;
+    //qDebug()<<"ro="<<ro<<"  E="<<E<<"  D="<<D<<"  Pa="<<Pa<<"  Pb="<<Pb;
     return QString("");
 }
 
 PointForSelection PortfolioParam::toPointForSelection(QVector<bool> checkedCriteria,int id)
 {
-    int n=checkedCriteria.length();
-    QStringList names;
-    QVector<double> values(n);
-    QVector<bool> maxDirection(n);
-    int i;
     //order of criteria: E D Pa Pb
-    if(checkedCriteria.at(i=0)){
-        names.insert(i,"mathE");
-        values[i]=this->E;
-        maxDirection[i]=true;
-    }
-    if(checkedCriteria.at(i=1)){
-        names.insert(i,"semi-D");
-        values[i]=this->D;
-        maxDirection[i]=false;
-    }
-    if(checkedCriteria.at(i=2)){
-        names.insert(i,"Pa");
-        values[i]=this->Pa;
-        maxDirection[i]=true;
-    }
-    if(checkedCriteria.at(i=3)){
-        names.insert(i,"mathE");
-        values[i]=this->Pb;
-        maxDirection[i]=true;
-    }
+    int n=checkedCriteria.length();
+    QStringList tmpNames;
+    tmpNames<<"mathE"<<"semi-D"<<"Pa"<<"Pb";
+    QVector<double> tmpValues;
+    tmpValues<<this->E<<this->D<<this->Pa<<this->Pb;
+    QVector<bool> tmpMaxDirection;
+    tmpMaxDirection<<true<<false<<true<<true;
 
+    ////qDebug()<<"tmpValues: "<<tmpValues;
+    QStringList names;
+    QVector<double> values;
+    QVector<bool> maxDirection;
+
+    for(int i=0;i<n;i++)
+        if(checkedCriteria.at(i)){
+            names.append(tmpNames.at(i));
+            values.append(tmpValues.at(i));
+            maxDirection.append(tmpMaxDirection.at(i));
+        }
+    ////qDebug()<<"values "<<values;
     PointForSelection point(id,names.length());
     point.setCriteria(values);
     point.setCriteriaNames(names);
@@ -317,7 +311,7 @@ PointForSelection PortfolioParam::toPointForSelection(QVector<bool> checkedCrite
     return false;
 }
 
-/*bool PortfolioParam::hasDominator(QVector<PointForSelection> points)
+bool PortfolioParam::hasDominator(QVector<PointForSelection> points)
 {
     PortfolioParam tmp;
     tmp.D=this->D;
@@ -338,18 +332,22 @@ QVector<PortfolioParam> getParetoSet(QVector<PortfolioParam> pors,QVector<bool> 
     {
         points[i]=pors[i].toPointForSelection(lx,i);
     }
+    //if(points.length()>=1)
+        //qDebug()<<points[1].getId()<<points[1].getCriteria(0);
     QVector<PointForSelection> paretoSetPoints;
     PointForSelection curP;
     while(!points.isEmpty())
     {
         curP=points.first();
+        //qDebug()<<"curP "<<curP.getCriteria(0);
         points.pop_front();
-        if(curP.hasDominator(points) || curP.hasDominator(paretoSetPoints))
+        if(hasDominatorInVector(curP,points)||hasDominatorInVector(curP,paretoSetPoints))
             ;  //do nothing
         else
             paretoSetPoints.push_back(curP);
     }
     n=paretoSetPoints.length();
+    //qDebug()<<"pareto length "<<n;
     QVector<PortfolioParam> paretoSetPorts(n);
     for(int i=0;i<n;i++)
         paretoSetPorts[i]=pors[paretoSetPoints[i].getId()];
@@ -407,4 +405,27 @@ void moveData(QStandardItemModel *from, QStandardItemModel *to)
         to->setHorizontalHeaderItem(j,from->horizontalHeaderItem(j)->clone());
         ix=from->index(i=0,++j);
     }
+}
+
+bool hasDominatorInVector(PointForSelection point, QVector<PointForSelection> points)
+{
+    //qDebug()<<"hasDominator call start------------ ";
+    //qDebug()<<"point "<<point.getCriteria(0);
+    QVector<double> tmp; //for debug reason in Release mode
+    for(int i=0;i<points.length();i++)
+    {
+        tmp.append(points.at(i).getCriteria(0)); //for debug reason in Release mode
+        if(points.at(i)>point)
+        {
+            //qDebug()<<"vector "<<tmp;
+            //qDebug()<<"result "<<true;
+            //qDebug()<<"hasDominator call end------------ ";
+            return true;
+        }
+
+    }
+    //qDebug()<<"vector "<<tmp;
+    //qDebug()<<"result"<<false;
+    //qDebug()<<"hasDominator call end------------ ";
+    return false;
 }

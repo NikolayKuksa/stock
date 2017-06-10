@@ -12,12 +12,17 @@ PointForSelection::PointForSelection(int id, int n)
 
 bool PointForSelection::operator >(const PointForSelection &other) const
 {
+    //qDebug()<<"operator > call"<<n;
+
     bool atListOneDominate=false;
     for(int i=0;i<n;i++)
     {
+        //qDebug()<<this->maxDirection;
+        //qDebug()<<"operator > this/other"<<this->getCriteria(i)<<other.getCriteria(i);
         if(this->getMaxDirection(i)){   //we need to maximize i-th criteria
             if(this->getCriteria(i)>=other.getCriteria(i))
             {
+
                 if(this->getCriteria(i)>other.getCriteria(i))
                     atListOneDominate=true;
                 else
@@ -44,6 +49,7 @@ bool PointForSelection::operator >(const PointForSelection &other) const
 
 double PointForSelection::getCriteria(int index) const
 {
+    //qDebug()<<"criteria: "<<criteria;
     return criteria.at(index);
 }
 
@@ -67,16 +73,9 @@ void PointForSelection::setCriteriaNames(QStringList names)
     this->criteriaNames=names;
 }
 
-void PointForSelection::setMaxDirection(QVector<bool> maxDirecton)
+void PointForSelection::setMaxDirection(QVector<bool> maxDirection)
 {
     this->maxDirection=maxDirection;
-}
-
-bool PointForSelection::hasDominator(QVector<PointForSelection> points) const
-{
-    for(int i=0;i<points.length();i++)
-        if(points.at(i)>(*this))
-            return true;
 }
 
 int PointForSelection::getId()
